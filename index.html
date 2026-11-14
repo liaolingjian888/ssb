@@ -120,6 +120,7 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
       <span class="count" id="nc">5 组</span>
       <span class="live"><i></i>待开奖</span>
     </div>
+    <div id="form-why" style="font-size:12px;color:var(--ink3);margin:-8px 0 12px"></div>
     <div id="next-sets"></div>
   </div>
 
@@ -239,6 +240,11 @@ function render(d) {
   }).join('');
   document.getElementById('nc').textContent =
     `${n.sets.length} 张票 · ${totalNotes} 注 · ${totalNotes*2} 元`;
+  if (n.form) {
+    document.getElementById('next-tag').textContent = `票型 ${n.form} · ${n.form_desc || ''}`;
+  }
+  const whyEl = document.getElementById('form-why');
+  if (whyEl && n.form_why) whyEl.textContent = n.form_why;
 
   // 复盘
   const lr = d.last_review;

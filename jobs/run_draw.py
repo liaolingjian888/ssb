@@ -199,6 +199,48 @@ def amount_of(t, draw):
     return 0
 
 
+FORM_LIBRARY = {
+    "A": {"desc": "2 张 7+1 + 2 张 6+2", "budget": 36, "forms": [
+        ("7+1", "主攻一", 7, 1, "综合评分"),
+        ("7+1", "主攻二", 7, 1, "热号延续"),
+        ("6+2", "辅攻一", 6, 2, "冷号回补"),
+        ("6+2", "辅攻二", 6, 2, "区间均衡")]},
+    "B": {"desc": "1 张 7+1 + 3 张 6+2（偏蓝球）", "budget": 26, "forms": [
+        ("7+1", "主攻", 7, 1, "综合评分"),
+        ("6+2", "辅攻一", 6, 2, "热号延续"),
+        ("6+2", "辅攻二", 6, 2, "冷号回补"),
+        ("6+2", "辅攻三", 6, 2, "区间均衡")]},
+    "C": {"desc": "4 张 6+2（全蓝球覆盖）", "budget": 16, "forms": [
+        ("6+2", "均衡一", 6, 2, "综合评分"),
+        ("6+2", "均衡二", 6, 2, "热号延续"),
+        ("6+2", "均衡三", 6, 2, "冷号回补"),
+        ("6+2", "均衡四", 6, 2, "区间均衡")]},
+    "D": {"desc": "2 张 7+1 + 1 张 6+2（偏红球容错）", "budget": 32, "forms": [
+        ("7+1", "主攻一", 7, 1, "综合评分"),
+        ("7+1", "主攻二", 7, 1, "热号延续"),
+        ("6+2", "辅攻", 6, 2, "冷号回补")]},
+}
+
+
+def choose_form(ledger, window=6):
+    """按最近几期"差在哪"挑票型。只调形式与预算，不改变任何一注的中奖概率。"""
+    recent = ledger[-window:]
+    if not recent:
+        return "A", "首期无历史，采用默认组合：红球容错 2 张 + 蓝球覆盖 2 张"
+    notes = sum(e.get("notes", 0) for e in recent) or 1
+    blue = sum(e.get("blue_hits", 0) for e in recent)
+    maxrh = sum(e.get("max_rh", 0) for e in recent) / len(recent)
+    blue_rate = blue / notes
+    if blue_rate < 0.75 / 16:                     # 蓝球命中率明显偏低
+        return "B", (f"近 {len(recent)} 期蓝球 {blue}/{notes} 注命中（期望 {notes/16:.1f}），"
+                     f"本期加厚蓝球覆盖：6 个不同蓝球")
+    if maxrh >= 4.0:                              # 红球经常只差 1-2 个
+        return "D", (f"近 {len(recent)} 期最多中红平均 {maxrh:.1f} 个，红球接近度较好，"
+                     f"本期加厚红球容错：2 张 7+1")
+    return "A", (f"近 {len(recent)} 期蓝球 {blue}/{notes} 注、最多中红平均 {maxrh:.1f}，"
+                 f"红蓝均衡，采用标准组合")
+
+
 FORMS = [
     ("7+1", "主攻一", 7, 1, "综合评分"),
     ("7+1", "主攻二", 7, 1, "热号延续"),
@@ -244,6 +286,7 @@ def review(tickets, draw):
                     "cost": cost, "prize": prize, "best": TIER[best],
                     "win_notes": sum(1 for h in hits if h["tier"]),
                     "max_rh": max(h["rh"] for h in hits),
+                    "blue_hits": sum(h["bh"] for h in hits),
                     "hits": hits})
         total_cost += cost
         total_prize += prize
@@ -252,7 +295,9 @@ def review(tickets, draw):
     return {"tickets": per, "cost": total_cost, "prize": total_prize,
             "pl": total_prize - total_cost, "best": best_all,
             "win_notes": sum(p["win_notes"] for p in per),
-            "notes": sum(p["notes"] for p in per)}
+            "notes": sum(p["notes"] for p in per),
+            "blue_hits": sum(p["blue_hits"] for p in per),
+            "max_rh": max(p["max_rh"] for p in per)}
 
 
 # ---------------- 选号 ----------------
@@ -324,8 +369,9 @@ def struct_ok(nums, n_red):
     return sum(1 for i in range(len(nums) - 1) if nums[i + 1] - nums[i] == 1) <= cons
 
 
-def make_sets(history, seed):
-    """按 FORMS 生成 2 张 7+1 + 2 张 6+2"""
+def make_sets(history, seed, forms=None):
+    """按给定票型生成号码；forms 缺省为 FORMS"""
+    forms = forms or FORMS
     pools = build_pools(history)
     drawn = {tuple(h["r"]) for h in history}
     rng = random.Random(seed)
@@ -343,7 +389,7 @@ def make_sets(history, seed):
                 order.append(b)
 
     sets = []
-    for typ, tag, n_red, n_blue, strategy in FORMS:
+    for typ, tag, n_red, n_blue, strategy in forms:
         pool = sorted(set(pool_map.get(strategy, [])))
         if len(pool) < n_red:
             continue
@@ -479,13 +525,25 @@ def main():
 
     # 生成下期
     nxt, nd = next_period(latest)
+    form_key, form_why = choose_form(st["ledger"])
+    form = FORM_LIBRARY[form_key]
     if nxt in st["tickets"]:
         sets = st["tickets"][nxt]
-        print(f"[选号] {nxt} 沿用")
+        saved_key = st.get("form_pick", {}).get(nxt)
+        if saved_key and saved_key in FORM_LIBRARY:
+            form_key = saved_key
+            form = FORM_LIBRARY[form_key]
+            form_why = st.get("form_why", {}).get(nxt, form_why)
+        else:
+            st.setdefault("form_pick", {})[nxt] = form_key
+            st.setdefault("form_why", {})[nxt] = form_why
+        print(f"[选号] {nxt} 沿用（票型 {form_key}）")
     else:
-        sets = make_sets(st["history"], int(nxt))
+        sets = make_sets(st["history"], int(nxt), form["forms"])
         st["tickets"][nxt] = sets
-        print(f"[选号] 生成 {nxt}（{nd}）{len(sets)} 组")
+        st.setdefault("form_pick", {})[nxt] = form_key
+        st.setdefault("form_why", {})[nxt] = form_why
+        print(f"[选号] 生成 {nxt}（{nd}）{len(sets)} 张 · 票型 {form_key} — {form_why}")
 
     # 统计
     cost_all = sum(x["cost"] for x in st["ledger"])
@@ -502,7 +560,8 @@ def main():
     # 输出
     payload = {
         "updated": time.strftime("%Y-%m-%d %H:%M"),
-        "next": {"p": nxt, "d": nd, "sets": sets},
+        "next": {"p": nxt, "d": nd, "sets": sets,
+                 "form": form_key, "form_desc": form["desc"], "form_why": form_why},
         "latest": ({"p": latest["p"], "d": latest["d"], "r": latest["r"], "b": latest["b"],
                     "p1": latest["p1"], "p1amt": latest["p1amt"],
                     "sales": latest["sales"], "pool": latest["pool"]}),
@@ -536,10 +595,12 @@ def main():
         total_notes = sum(notes_of(t) for t in sets)
         md = [f"### 第 {nxt} 期　{nxt_week}", ""]
         md.append(f"{len(sets)} 张票 · {total_notes} 注 · {total_notes * 2} 元 · 开奖 21:15")
+        md.append(f"票型 {form_key}：{form['desc']}")
+        md.append("")
+        md.append(f"> {form_why}")
         md.append("")
         for t in sets:
-            md.append(f"- **{t['n']}**（{notes_of(t)} 注）")
-            md.append(f"　{fmt_ticket(t)}")
+            md.append(f"- **{t['n']}**（{notes_of(t)} 注）　{fmt_ticket(t)}")
         if detail:
             md += ["", "---", "", f"### 第 {detail['p']} 期复盘", ""]
             md.append("开奖　**" + " ".join(f"{x:02d}" for x in detail["r"]) + "**　＋　**"
