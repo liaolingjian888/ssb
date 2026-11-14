@@ -59,6 +59,34 @@ def http_get(url, referer=None, tries=4):
     raise RuntimeError(f"请求失败 {url}: {last}")
 
 
+def fetch_recent_500(year=None, count=6):
+    """官网不可用时，用 500.com 当年开奖表兜底"""
+    y = year or date.today().year
+    url = ("https://datachart.500.com/ssq/history/newinc/history.php"
+           f"?start={str(y)[2:]}001&end={str(y)[2:]}999")
+    raw = http_get(url, referer="https://datachart.500.com/ssq/history/history.shtml")
+    html = raw.decode("gb18030", "replace")
+    out = []
+    for tr in re.findall(r'<tr class="t_tr1">(.*?)</tr>', html, re.S):
+        c = [re.sub(r"<[^>]+>", "", x).replace("\xa0", "").strip()
+             for x in re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)]
+        if len(c) < 17:
+            continue
+
+        def n(v):
+            v = re.sub(r"\D", "", v)
+            return int(v) if v else 0
+
+        code = "20" + c[1][:2] + c[1][2:]
+        out.append({"p": code, "d": c[16],
+                    "r": sorted(int(x) for x in c[2:8]), "b": int(c[8]),
+                    "p1": n(c[11]), "p1amt": n(c[12]),
+                    "p2": n(c[13]), "p2amt": n(c[14]),
+                    "sales": n(c[15]), "pool": n(c[10])})
+    out.sort(key=lambda x: x["p"])
+    return out[-count:]
+
+
 def fetch_recent(count=6):
     q = (f"{API}?name=ssq&issueCount={count}&issueStart=&issueEnd=&dayStart=&dayEnd="
          f"&pageNo=1&pageSize=30&week=&systemType=PC")
@@ -314,7 +342,18 @@ def main():
         print(f"[bootstrap] 完成，共 {len(st['history'])} 期")
     print(f"[state] 历史 {len(st['history'])} 期 / 已下注 {len(st['tickets'])} 期 / 台账 {len(st['ledger'])} 条")
 
-    recent = fetch_recent(6)
+    try:
+        recent = fetch_recent(6)
+    except Exception as e:
+        print(f"[warn] 官网开奖接口失败：{e}", file=sys.stderr)
+        recent = []
+        for y in (date.today().year, date.today().year - 1):
+            try:
+                recent = fetch_recent_500(y, 6)
+                print(f"[warn] 已回退到 500.com（{y} 年）")
+                break
+            except Exception as e2:
+                print(f"[warn] 500.com {y} 也失败：{e2}", file=sys.stderr)
     have = {h["p"] for h in st["history"]}
     added = [x for x in recent if x["p"] not in have]
     st["history"].extend(added)
