@@ -5,4 +5,4 @@
 [复盘] 2026130 无投注记录
 [选号] 2026131 沿用
 [输出] /home/runner/work/ssb/ssb/data.json
-[推送] 未配置推送
+[推送] 未配置推送（缺 WECOM_WEBHOOK / SERVERCHAN_KEY）
