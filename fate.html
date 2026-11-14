@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>运势选号 · 双色球</title>
+<style>
+:root{
+  --navy:#1C4196;--navy-l:#E8EEF9;--navy-m:#C7D6EE;
+  --red:#C00000;--red-l:#FCEDED;--red-m:#F3C9C9;
+  --green:#0E7A4E;--amber:#F7941E;--amber-l:#FDF3E4;
+  --ink:#141414;--ink2:#5B5B57;--ink3:#96968F;
+  --line:#E8E8E4;--line2:#F3F3EF;--bg:#FAFAF8;--card:#FFFFFF;
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px}
+header{border-bottom:1px solid var(--line);background:rgba(255,255,255,.92);position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(8px)}
+.hd{max-width:1000px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:500;font-size:15.5px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
+.dot.b{background:var(--navy)}
+.nav{display:flex;gap:6px;margin-left:auto}
+.nav a{font-size:12.5px;color:var(--ink2);text-decoration:none;padding:5px 11px;border-radius:20px}
+.nav a:hover{background:var(--line2)}
+.nav a.on{background:var(--navy);color:#fff}
+
+h1{font-size:23px;font-weight:500;margin:30px 0 8px;letter-spacing:-.3px}
+.lead{font-size:13px;color:var(--ink2);margin-bottom:20px}
+
+.warn{background:#FDF3E4;border:1px solid #F0DDB8;border-radius:12px;padding:15px 17px;
+  font-size:12.5px;color:#6B4A12;line-height:1.75;margin-bottom:16px}
+.warn b{font-weight:500;color:#4A3208}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;margin-bottom:16px}
+.card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.card-h h2{font-size:13.5px;font-weight:500}
+.card-h .tag{font-size:11px;color:var(--ink3);margin-left:auto}
+
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:11.5px;color:var(--ink3)}
+input,select{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:9px;background:#fff;color:var(--ink);outline:none;width:100%}
+input:focus,select:focus{border-color:var(--navy)}
+button{font-family:inherit;font-size:13px;padding:9px 18px;border-radius:9px;border:1px solid var(--navy);
+  background:var(--navy);color:#fff;cursor:pointer;transition:.15s}
+button:hover{opacity:.9}
+button.ghost{background:#fff;color:var(--navy)}
+button.sm{padding:6px 13px;font-size:12px}
+
+.balls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ball{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:500;font-variant-numeric:tabular-nums;flex:none}
+.ball.r{background:var(--red-l);color:var(--red);border:1px solid var(--red-m)}
+.ball.b{background:var(--navy-l);color:var(--navy);border:1px solid var(--navy-m)}
+.plus{color:var(--ink3);font-size:12px;margin:0 3px}
+
+.wx{display:grid;gap:8px;margin-top:4px}
+.wx-row{display:grid;grid-template-columns:52px 1fr 38px;gap:10px;align-items:center;font-size:12px}
+.wx-row .nm{color:var(--ink2)}
+.wx-row .bar{height:10px;background:var(--line2);border-radius:5px;overflow:hidden}
+.wx-row .bar i{display:block;height:100%;border-radius:5px}
+.wx-row .sc{text-align:right;color:var(--ink3);font-variant-numeric:tabular-nums}
+.wx-row.top .nm{color:var(--ink);font-weight:500}
+.wx-row.top .bar{box-shadow:inset 0 0 0 1px #00000010}
+
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+.tag{font-size:11px;padding:2px 9px;border-radius:10px;background:var(--line2);color:var(--ink2)}
+.tag.hot{background:var(--red-l);color:var(--red)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:11px;font-weight:400;color:var(--ink3);text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.num{text-align:right}
+.mono{font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+
+.cmp{display:grid;gap:3px;margin-top:8px}
+.cmp-row{display:grid;grid-template-columns:44px 1fr 54px;gap:8px;align-items:center;font-size:11px}
+.cmp-row .bar{height:8px;background:var(--line2);border-radius:4px;position:relative;overflow:hidden}
+.cmp-row .bar i{display:block;height:100%;background:var(--navy-m);border-radius:4px}
+.cmp-row .bar:after{content:"";position:absolute;left:49.55%;top:0;bottom:0;width:1px;background:#C00000;opacity:.55}
+.cmp-row .bar i.hi{background:var(--red-m)}
+.cmp-row .v{text-align:right;color:var(--ink3);font-variant-numeric:tabular-nums}
+.baseline{font-size:11.5px;color:var(--ink3);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.note{font-size:12px;color:var(--ink2);background:#FFFBF2;border:1px solid #F3E6C9;border-radius:12px;padding:15px 17px;line-height:1.8}
+.note b{font-weight:500;color:var(--ink)}
+.empty{font-size:12.5px;color:var(--ink3);padding:14px 0;text-align:center}
+footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:26px;line-height:1.9}
+footer a{color:var(--ink2)}
+@media(max-width:680px){h1{font-size:19px}.card{padding:16px 15px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="brand"><span class="dot"></span><span class="dot b"></span>双色球 · 运势选号</div>
+    <div class="nav">
+      <a href="./">数据</a>
+      <a href="./fate.html" class="on">运势选号</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <h1>五行 · 星座 · 风水选号</h1>
+  <p class="lead">按出生时辰推五行旺衰，结合星座元素与当日九宫，映射成号码。下面是完整的推演过程和实测对照。</p>
+
+  <div class="warn">
+    <b>先说清楚：这套东西不能提高中奖概率。</b>
+    五行、星座、风水与摇奖机之间没有任何已被证实的联系。任何一注号码中一等奖的概率恒为 1/17,721,088，与你的生日无关。
+    这一页做的是<b>文化娱乐玩法</b>——把传统术数规则忠实地实现出来，让选号过程有点意思。
+    页面底部的「实测对照」会用 3,527 期真实开奖数据检验一遍：按这套规则选出的号码，长期命中率和随手乱选没有区别。
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>输入生辰</h2><span class="tag">只在本机计算，不上传</span></div>
+    <div class="form">
+      <div class="fld"><label>出生年</label><input id="y" type="number" value="1988" min="1930" max="2025"></div>
+      <div class="fld"><label>月</label><input id="m" type="number" value="6" min="1" max="12"></div>
+      <div class="fld"><label>日</label><input id="d" type="number" value="15" min="1" max="31"></div>
+      <div class="fld"><label>时辰</label>
+        <select id="h">
+          <option value="0">子时 23–01</option><option value="1">丑时 01–03</option>
+          <option value="2">寅时 03–05</option><option value="3">卯时 05–07</option>
+          <option value="4">辰时 07–09</option><option value="5">巳时 09–11</option>
+          <option value="6">午时 11–13</option><option value="7">未时 13–15</option>
+          <option value="8">申时 15–17</option><option value="9">酉时 17–19</option>
+          <option value="10">戌时 19–21</option><option value="11">亥时 21–23</option>
+        </select>
+      </div>
+      <div class="fld"><label>&nbsp;</label><button id="go">推演并选号</button></div>
+    </div>
+  </div>
+
+  <div class="card" id="result" style="display:none">
+    <div class="card-h"><h2>本期号码</h2><span class="tag" id="res-tag"></span></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <span class="balls" id="nums"></span>
+      <button class="ghost sm" id="again" style="margin-left:auto">再摇一次</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">五行得分（喜用神为得分最高的两行）</div>
+    <div class="wx" id="wx"></div>
+    <div class="tags" id="tags"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>推演过程</h2><span class="tag">每一步都可核对</span></div>
+    <div id="steps"><div class="empty">点击上方「推演并选号」后显示</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>实测对照：这套规则在 3,527 期里表现如何</h2><span class="tag">基线 1.09</span></div>
+    <div id="cmp"><div class="empty">正在用历史数据回测…</div></div>
+    <div class="baseline" id="cmp-foot"></div>
+  </div>
+
+  <div class="note">
+    <b>怎么看这个对照结果。</b>单注 6 个红球与某期开奖命中数的理论期望是 6×6/33 = 1.09 个。
+    下面每一根柱子是「换一个生日 → 得到另一组五行号码 → 拿这组号码去回测 3,527 期」的平均命中。
+    如果五行真有作用，不同生日的号码应该有系统性差异；<b>如果全部挤在 1.09 附近上下抖动，那就说明它只是随机噪声的不同样本</b>，
+    换哪个生日都改变不了什么。同样的检验你也可以用星座、风水做，结果一样。
+  </div>
+
+  <footer>
+    本页为文化娱乐玩法 · 不构成任何投注建议<br>
+    <a href="./">返回数据页</a>
+  </footer>
+</div>
+
+<script>
+const pad = n => String(n).padStart(2, '0');
+const REMOTE_DATA = 'https://raw.githubusercontent.com/liaolingjian888/ssb/main/data.json';
+const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const WX = ['木','火','土','金','水'];
+const WX_COLOR = {'木':'#3B6D11','火':'#C00000','土':'#BA7517','金':'#8C8C88','水':'#1C4196'};
+const GAN_WX = ['木','木','火','火','土','土','金','金','水','水'];
+const ZHI_WX = ['水','土','木','木','土','火','火','土','金','金','土','水'];
+// 河图数：1/6 水、2/7 火、3/8 木、4/9 金、5/10 土
+const NUM_WX = n => { const r = n % 10; return r===1||r===6?'水':r===2||r===7?'火':r===3||r===8?'木':r===4||r===9?'金':'土'; };
+const LUOSHU = ['','坎水','坤土','震木','巽木','中土','乾金','兑金','艮土','离火'];
+
+const ZODIAC = [
+  ['摩羯',1,19,'土'],['水瓶',2,18,'风'],['双鱼',3,20,'水'],['白羊',4,19,'火'],
+  ['金牛',5,20,'土'],['双子',6,21,'风'],['巨蟹',7,22,'水'],['狮子',8,22,'火'],
+  ['处女',9,22,'土'],['天秤',10,23,'风'],['天蝎',11,22,'水'],['射手',12,21,'火'],['摩羯',12,31,'土']
+];
+const ELEM_WX = {'火':'火','土':'土','风':'木','水':'水'};
+
+function zodiacOf(m, d) {
+  for (const [name, mm, dd, el] of ZODIAC) if (m < mm || (m === mm && d <= dd)) return [name, el];
+  return ['摩羯', '土'];
+}
+function seasonWx(m) {
+  if (m >= 3 && m <= 5) return '木';
+  if (m >= 6 && m <= 8) return '火';
+  if (m >= 9 && m <= 11) return '金';
+  return '水';
+}
+function jiuGong(dateStr) {
+  const t = new Date(dateStr + 'T00:00:00').getTime() / 86400000;
+  return ((Math.floor(t) % 9) + 9) % 9 + 1;
+}
+
+function score(y, m, d, h) {
+  const s = {'木':0,'火':0,'土':0,'金':0,'水':0};
+  const g = (y - 4) % 10, z = (y - 4) % 12;
+  s[GAN_WX[g]] += 3;           // 年干
+  s[ZHI_WX[z]] += 2;           // 年支
+  s[seasonWx(m)] += 2.5;       // 出生季节当令
+  s[ZHI_WX[h]] += 1.5;         // 出生时辰
+  const [zn, el] = zodiacOf(m, d);
+  s[ELEM_WX[el]] += 2;         // 星座元素
+  const jg = jiuGong(new Date().toISOString().slice(0,10));
+  s[LUOSHU[jg].slice(1)] += 1; // 当日九宫方位
+  return { s, g, z, zn, el, jg };
+}
+
+function pick(y, m, d, h, rnd) {
+  const { s, g, z, zn, el, jg } = score(y, m, d, h);
+  const rank = Object.entries(s).sort((a,b)=>b[1]-a[1]);
+  const fav = [rank[0][0], rank[1][0]];
+  const pool = [], poolAll = [];
+  for (let n = 1; n <= 33; n++) {
+    const w = NUM_WX(n);
+    poolAll.push({ n, keep: fav.includes(w), w });
+    if (fav.includes(w)) pool.push(n);
+  }
+  const cand = pool.length >= 12 ? pool : poolAll.map(x=>x.n);
+  let reds = null;
+  for (let i = 0; i < 3000; i++) {
+    const pick6 = [];
+    const cp = cand.slice();
+    while (pick6.length < 6 && cp.length) pick6.push(cp.splice(Math.floor(rnd()*cp.length),1)[0]);
+    pick6.sort((a,b)=>a-b);
+    if (pick6.length < 6) break;
+    const sum = pick6.reduce((a,b)=>a+b,0), odd = pick6.filter(x=>x%2).length;
+    const zz = [pick6.filter(x=>x<=11).length, pick6.filter(x=>x>=12&&x<=22).length, pick6.filter(x=>x>=23).length];
+    if (sum < 92 || sum > 112) continue;
+    if (odd < 2 || odd > 4) continue;
+    if (Math.max(...zz) > 3 || Math.min(...zz) === 0) continue;
+    reds = pick6; break;
+  }
+  if (!reds) reds = cand.slice(0, 6);
+  const blueCand = [];
+  for (let b = 1; b <= 16; b++) if (fav.includes(NUM_WX(b))) blueCand.push(b);
+  const blue = (blueCand.length ? blueCand : Array.from({length:16},(_,i)=>i+1))[Math.floor(rnd()*(blueCand.length||16))];
+  return { reds, blue, s: rank, fav, g, z, zn, el, jg, blueCand };
+}
+
+let seed = Date.now();
+const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+
+function renderResult(r, y, m, d, h) {
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('nums').innerHTML =
+    r.reds.map(x=>`<span class="ball r">${pad(x)}</span>`).join('') +
+    `<span class="plus">+</span><span class="ball b">${pad(r.blue)}</span>`;
+  const max = Math.max(...r.s.map(x=>x[1]));
+  document.getElementById('wx').innerHTML = r.s.map(([k,v],i)=>`
+    <div class="wx-row${i<2?' top':''}">
+      <span class="nm">${k}${i<2?' 喜用':''}</span>
+      <span class="bar"><i style="width:${Math.round(v/max*100)}%;background:${WX_COLOR[k]}"></i></span>
+      <span class="sc">${v.toFixed(1)}</span>
+    </div>`).join('');
+  document.getElementById('tags').innerHTML =
+    `<span class="tag">${GAN[r.g]}${ZHI[r.z]}年</span>
+     <span class="tag">${r.zn}座 · ${r.el}象</span>
+     <span class="tag">九宫 ${LUOSHU[r.jg]}</span>
+     <span class="tag hot">喜用 ${r.fav.join(' / ')}</span>
+     <span class="tag">蓝球候选 ${r.blueCand.map(pad).join(' ')}</span>`;
+  document.getElementById('res-tag').textContent = `${y}-${pad(m)}-${pad(d)} ${['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][h]}时`;
+
+  const favNums = r.s.filter((_,i)=>i<2).map(([k])=>k);
+  const numsOf = w => { const a=[]; for (let n=1;n<=33;n++) if (NUM_WX(n)===w) a.push(pad(n)); return a.join(' '); };
+  document.getElementById('steps').innerHTML = `<table>
+    <thead><tr><th>步骤</th><th>取法</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>年柱</td><td>公历年按干支纪年</td><td class="mono">${GAN[r.g]}${ZHI[r.z]}（${GAN_WX[r.g]} / ${ZHI_WX[r.z]}）</td></tr>
+      <tr><td>季节当令</td><td>出生月对应四时</td><td>${seasonWx(m)}旺</td></tr>
+      <tr><td>时辰</td><td>十二时辰地支五行</td><td>${ZHI[h]}时（${ZHI_WX[h]}）</td></tr>
+      <tr><td>星座</td><td>${r.zn}座 → ${r.el}象 → ${ELEM_WX[r.el]}</td><td>${ELEM_WX[r.el]}</td></tr>
+      <tr><td>风水</td><td>当日九宫飞星</td><td>${LUOSHU[r.jg]}</td></tr>
+      <tr><td>数字映射</td><td>河图数 1/6水 2/7火 3/8木 4/9金 5/10土</td>
+          <td class="mono">${favNums.map(w=>w+'：'+numsOf(w)).join('<br>')}</td></tr>
+      <tr><td>结构约束</td><td>和值 92–112、奇偶 2:4/3:3/4:2、三区不空且最大≤3</td><td>和值 ${r.reds.reduce((a,b)=>a+b,0)}</td></tr>
+    </tbody></table>`;
+}
+
+function run() {
+  const y = +document.getElementById('y').value;
+  const m = +document.getElementById('m').value;
+  const d = +document.getElementById('d').value;
+  const h = +document.getElementById('h').value;
+  const day = Math.floor(new Date(new Date().toISOString().slice(0,10) + 'T00:00:00').getTime() / 86400000);
+  seed = y * 10000 + m * 100 + d + h * 13 + day * 997;   // 同一天同一生辰结果稳定
+  const r = pick(y, m, d, h, rnd);
+  renderResult(r, y, m, d, h);
+  window.__last = { y, m, d, h };
+}
+
+document.getElementById('go').onclick = run;
+window.addEventListener('load', () => setTimeout(run, 60));
+document.getElementById('again').onclick = () => {
+  const p = window.__last; if (!p) return run();
+  seed = Date.now() + Math.random() * 1e6;
+  renderResult(pick(p.y, p.m, p.d, p.h, rnd), p.y, p.m, p.d, p.h);
+};
+
+// ---------- 实测对照 ----------
+function getJSON(url){return fetch(url,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});}
+function backtest(hist, reds) {
+  const s = new Set(reds);
+  let tot = 0;
+  for (const h of hist) { for (const b of h.r) if (s.has(b)) tot++; }
+  return tot / hist.length;
+}
+(function compare(){
+  (window.__DATA__ ? Promise.resolve(window.__DATA__)
+    : getJSON(REMOTE_DATA + '?t=' + Date.now()).catch(()=>getJSON('./data.json?t='+Date.now())))
+    .then(d => {
+      const hist = d.history || [];
+      const rows = [];
+      let sd = 20260101;
+      const rnd2 = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+      for (let i = 0; i < 24; i++) {
+        const y = 1950 + Math.floor(i * 3.1);
+        const m = 1 + (i % 12), dd = 1 + (i * 7) % 28;
+        const r = pick(y, m, dd, i % 12, rnd2);
+        rows.push({ y, m, d: dd, avg: backtest(hist, r.reds), fav: r.fav.join('/') });
+      }
+      const base = 1.09;
+      const max = 2.2;   // 固定刻度，让 1.09 基线落在中间，波动一眼可见
+      document.getElementById('cmp').innerHTML = `<div class="cmp">${rows.slice(0,18).map(r=>`
+        <div class="cmp-row">
+          <span class="mono">${r.y}</span>
+          <span class="bar"><i class="${Math.abs(r.avg-1.09)>0.15?'hi':''}" style="width:${(r.avg/max*100).toFixed(1)}%"></i></span>
+          <span class="v">${r.avg.toFixed(2)}</span>
+        </div>`).join('')}</div>`;
+      const avgs = rows.map(r=>r.avg);
+      const mean = avgs.reduce((a,b)=>a+b,0)/avgs.length;
+      const sdv = Math.sqrt(avgs.reduce((a,b)=>a+(b-mean)**2,0)/avgs.length);
+      document.getElementById('cmp-foot').innerHTML =
+        `${rows.length} 个不同生日 → ${rows.length} 组五行号码，各自回测 ${hist.length.toLocaleString()} 期：<br>
+         平均命中 <b>${mean.toFixed(3)}</b> 个红球（随机基线 1.090），
+         最高 ${Math.max(...avgs).toFixed(2)}、最低 ${Math.min(...avgs).toFixed(2)}，标准差 ${sdv.toFixed(3)}。<br>
+         波动范围正好是 3,527 期小样本该有的抽样误差——<b>与生日、五行、星座没有任何系统性关联</b>。`;
+    })
+    .catch(e => {
+      document.getElementById('cmp').innerHTML = '<div class="empty">历史数据暂不可达，稍后刷新重试</div>';
+    });
+})();
+</script>
+</body>
+</html>

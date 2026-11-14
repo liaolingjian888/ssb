@@ -6,95 +6,116 @@
 <title>双色球 · 自动选号与复盘</title>
 <style>
 :root{
-  --navy:#1C4196;--navy-l:#E8EEF9;--orange:#F7941E;
-  --red:#C00000;--red-l:#FCEDED;--green:#0E7A4E;
-  --ink:#1A1A1A;--ink2:#5F5E5A;--ink3:#8C8C88;
-  --line:#E6E6E3;--bg:#FAFAF8;--card:#FFFFFF;
-  --radius:14px;
+  --navy:#1C4196;--navy-l:#E8EEF9;--navy-m:#C7D6EE;
+  --red:#C00000;--red-l:#FCEDED;--red-m:#F3C9C9;
+  --green:#0E7A4E;--amber:#F7941E;
+  --ink:#141414;--ink2:#5B5B57;--ink3:#96968F;
+  --line:#E8E8E4;--line2:#F3F3EF;--bg:#FAFAF8;--card:#FFFFFF;
+  --r:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
-  background:var(--bg);color:var(--ink);line-height:1.6;
+  background:var(--bg);color:var(--ink);line-height:1.62;
   -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:1040px;margin:0 auto;padding:0 20px 72px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 80px}
 
-header{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:10}
-.hd{max-width:1040px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:9px;font-weight:500;font-size:16px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--red)}
+header{border-bottom:1px solid var(--line);background:rgba(255,255,255,.92);position:sticky;top:0;z-index:20;backdrop-filter:saturate(180%) blur(8px)}
+.hd{max-width:1080px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-weight:500;font-size:15.5px;letter-spacing:.2px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--red)}
 .dot.b{background:var(--navy)}
-.hd-sub{font-size:12px;color:var(--ink3);margin-left:auto}
-.live{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--green);
-  background:#EAF6F0;padding:3px 9px;border-radius:20px}
-.live i{width:6px;height:6px;border-radius:50%;background:var(--green);display:block}
+.nav{display:flex;gap:6px;margin-left:auto;align-items:center}
+.nav a{font-size:12.5px;color:var(--ink2);text-decoration:none;padding:5px 11px;border-radius:20px;transition:.15s}
+.nav a:hover{background:var(--line2);color:var(--ink)}
+.nav a.on{background:var(--navy);color:#fff}
+.stamp{font-size:11.5px;color:var(--ink3);margin-left:8px}
 
-h1{font-size:22px;font-weight:500;margin:32px 0 6px;letter-spacing:-.2px}
-.lead{font-size:13px;color:var(--ink2);margin-bottom:24px}
+h1{font-size:23px;font-weight:500;margin:30px 0 8px;letter-spacing:-.3px}
+.lead{font-size:13px;color:var(--ink2);margin-bottom:22px}
 
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px}
-.card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
-.card-h h2{font-size:14px;font-weight:500;color:var(--ink)}
-.card-h .tag{font-size:11px;color:var(--ink3);margin-left:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;margin-bottom:16px}
+.card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.card-h h2{font-size:13.5px;font-weight:500;letter-spacing:.2px}
+.card-h .tag{font-size:11px;color:var(--ink3);margin-left:auto;text-align:right}
 
-.next-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
-.period{font-size:26px;font-weight:500;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.period small{font-size:13px;color:var(--ink2);font-weight:400;margin-left:8px}
-.count{font-size:12px;color:var(--navy);background:var(--navy-l);padding:4px 10px;border-radius:20px}
+.overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.ov{background:#fff;padding:15px 16px}
+.ov .k{font-size:11px;color:var(--ink3);margin-bottom:5px}
+.ov .v{font-size:20px;font-weight:500;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.ov .v small{font-size:11px;font-weight:400;color:var(--ink3);margin-left:2px}
+.ov .v.up{color:var(--red)}
+.ov .v.down{color:var(--green)}
 
-.set{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px dashed var(--line);flex-wrap:wrap}
-.set:first-of-type{border-top:none}
-.set-name{font-size:12px;color:var(--ink2);width:72px;flex:none}
-.balls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.ball{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;flex:none}
-.ball.r{background:var(--red-l);color:var(--red);border:1px solid #F3D2D2}
-.ball.b{background:var(--navy-l);color:var(--navy);border:1px solid #CFDCF2}
-.ball.sm{width:26px;height:26px;font-size:12px}
-.plus{color:var(--ink3);font-size:12px;margin:0 1px}
-.set-meta{margin-left:auto;font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.next-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.period{font-size:27px;font-weight:500;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.period small{font-size:13px;color:var(--ink2);font-weight:400;margin-left:8px;letter-spacing:0}
+.chip{font-size:11.5px;color:var(--navy);background:var(--navy-l);padding:3px 10px;border-radius:20px}
+.chip.gray{color:var(--ink3);background:var(--line2)}
+.form-why{font-size:12px;color:var(--ink3);margin-bottom:14px;padding-left:11px;border-left:2px solid var(--line)}
 
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.m{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
-.m .k{font-size:11px;color:var(--ink3);margin-bottom:6px}
-.m .v{font-size:24px;font-weight:500;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
-.m .v.up{color:var(--red)}
-.m .v.down{color:var(--green)}
-.m .s{font-size:11px;color:var(--ink3);margin-top:2px}
+.ticket{display:grid;grid-template-columns:96px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px dashed var(--line)}
+.ticket:first-of-type{border-top:none}
+.tk-name{font-size:12px;color:var(--ink2);line-height:1.35}
+.tk-name b{display:block;font-weight:500;color:var(--ink);font-size:12.5px}
+.balls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.ball{width:29px;height:29px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;flex:none;letter-spacing:.3px}
+.ball.r{background:var(--red-l);color:var(--red);border:1px solid var(--red-m)}
+.ball.b{background:var(--navy-l);color:var(--navy);border:1px solid var(--navy-m)}
+.ball.r.hit{background:var(--red);color:#fff;border-color:var(--red)}
+.ball.b.hit{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ball.sm{width:25px;height:25px;font-size:11.5px}
+.plus{color:var(--ink3);font-size:12px;margin:0 2px}
+.tk-meta{font-size:11px;color:var(--ink3);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{font-size:11px;font-weight:400;color:var(--ink3);text-align:left;padding:8px 10px;
-  border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 10px;border-bottom:1px solid #F2F2EF;font-variant-numeric:tabular-nums}
+.rev-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--line2);margin-bottom:2px}
+.rev-head .lbl{font-size:11.5px;color:var(--ink3)}
+.pl{font-size:14px;font-weight:500;font-variant-numeric:tabular-nums;margin-left:auto}
+.pl.neg{color:var(--green)}
+.pl.pos{color:var(--red)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-size:11px;font-weight:400;color:var(--ink3);text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 .num{text-align:right}
-.mono{font-variant-numeric:tabular-nums;letter-spacing:.3px}
-.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.mono{font-variant-numeric:tabular-nums;letter-spacing:.2px}
+.pill{display:inline-block;font-size:10.5px;padding:1px 8px;border-radius:9px;white-space:nowrap;line-height:1.6}
 .pill.win{background:var(--red-l);color:var(--red)}
-.pill.miss{background:#F2F2EF;color:var(--ink3)}
+.pill.miss{background:var(--line2);color:var(--ink3)}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
-.freq{display:grid;grid-template-columns:repeat(auto-fill,minmax(19px,1fr));gap:5px;margin-top:4px}
-.fb{display:flex;flex-direction:column;align-items:center;gap:3px}
-.fb .bar{width:100%;background:var(--red-l);border-radius:3px 3px 0 0;position:relative;min-height:2px}
-.fb .bar i{position:absolute;bottom:0;left:0;right:0;background:var(--red);border-radius:3px 3px 0 0;display:block}
-.fb.blue .bar{background:var(--navy-l)}
-.fb.blue .bar i{background:var(--navy)}
-.fb .lb{font-size:10px;color:var(--ink3);font-variant-numeric:tabular-nums}
-.fb{position:relative}
+.heat{display:grid;grid-template-columns:repeat(11,1fr);gap:6px}
+.heat.b16{grid-template-columns:repeat(8,1fr);max-width:70%}
+.hc{position:relative;aspect-ratio:1/.92;border-radius:8px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;border:1px solid transparent;transition:.15s}
+.hc:hover{transform:translateY(-1px);border-color:var(--ink3)}
+.hc .n{font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1}
+.hc .c{font-size:9.5px;opacity:.75;font-variant-numeric:tabular-nums;line-height:1}
+.legend{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--ink3);margin-top:12px;justify-content:flex-end}
+.legend i{width:14px;height:9px;border-radius:2px;display:block}
 
-.note{font-size:12px;color:var(--ink2);background:#FFFBF3;border:1px solid #F5E6C8;
-  border-radius:10px;padding:14px 16px;line-height:1.75}
+.dist{display:flex;align-items:flex-end;gap:2px;height:110px;margin-top:6px}
+.db{flex:1;background:var(--red-l);border-radius:2px 2px 0 0;position:relative;min-height:1px}
+.db.on{background:var(--red)}
+.dx{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-top:5px;font-variant-numeric:tabular-nums}
+
+.note{font-size:12px;color:var(--ink2);background:#FFFBF2;border:1px solid #F3E6C9;
+  border-radius:12px;padding:15px 17px;line-height:1.78}
 .note b{font-weight:500;color:var(--ink)}
-footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-height:1.8}
-.empty{font-size:13px;color:var(--ink3);padding:18px 0;text-align:center}
-@media(max-width:640px){
-  .set-name{width:100%}
-  .set-meta{margin-left:0;width:100%}
-  h1{font-size:19px}
-  .period{font-size:22px}
-  .card{padding:18px 16px}
+.empty{font-size:12.5px;color:var(--ink3);padding:16px 0;text-align:center}
+footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:26px;line-height:1.9}
+footer a{color:var(--ink2)}
+@media(max-width:680px){
+  .ticket{grid-template-columns:1fr;gap:6px}
+  .tk-meta{text-align:left}
+  .heat{grid-template-columns:repeat(6,1fr)}
+  .heat.b16{grid-template-columns:repeat(8,1fr);max-width:70%}
+  h1{font-size:19px}.period{font-size:22px}
+  .card{padding:16px 15px}
+  .stamp{display:none}
 }
 </style>
 </head>
@@ -102,13 +123,25 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
 <header>
   <div class="hd">
     <div class="brand"><span class="dot"></span><span class="dot b"></span>双色球 · 自动选号与复盘</div>
-    <div class="hd-sub" id="updated">读取中…</div>
+    <div class="nav">
+      <a href="./" class="on">数据</a>
+      <a href="./fate.html">运势选号</a>
+      <span class="stamp" id="updated">读取中…</span>
+    </div>
   </div>
 </header>
 
 <div class="wrap">
   <h1>每期 4 张票，开奖后自动复盘</h1>
-  <p class="lead">数据源：中国福利彩票官网 · 历史样本 <span id="hn">—</span> 期 · 每期开奖后自动抓取、判定、生成下一期</p>
+  <p class="lead">数据源：中国福利彩票官网 · 历史 <span id="hn">—</span> 期 · 每期开奖后自动抓取、判定、生成下一期</p>
+
+  <div class="overview">
+    <div class="ov"><div class="k">历史样本</div><div class="v" id="ov1">—<small>期</small></div></div>
+    <div class="ov"><div class="k">下一期</div><div class="v" id="ov2">—</div></div>
+    <div class="ov"><div class="k">已复盘</div><div class="v" id="ov3">0<small>期</small></div></div>
+    <div class="ov"><div class="k">累计盈亏</div><div class="v" id="ov4">¥0</div></div>
+    <div class="ov"><div class="k">返奖率</div><div class="v" id="ov5">—</div></div>
+  </div>
 
   <div class="card">
     <div class="card-h">
@@ -117,14 +150,14 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
     </div>
     <div class="next-top">
       <div class="period"><span id="np">—</span><small id="nd">—</small></div>
-      <span class="count" id="nc">5 组</span>
-      <span class="live"><i></i>待开奖</span>
+      <span class="chip" id="nc">—</span>
+      <span class="chip gray">开奖 21:15</span>
     </div>
-    <div id="form-why" style="font-size:12px;color:var(--ink3);margin:-8px 0 12px"></div>
+    <div class="form-why" id="form-why" style="display:none"></div>
     <div id="next-sets"></div>
   </div>
 
-  <div class="card" id="review-card">
+  <div class="card">
     <div class="card-h">
       <h2>最近一期复盘</h2>
       <span class="tag" id="rv-tag"></span>
@@ -132,11 +165,21 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
     <div id="review"></div>
   </div>
 
-  <div class="metrics" style="margin-bottom:18px">
-    <div class="m"><div class="k">已复盘期数</div><div class="v" id="m1">0</div><div class="s">2 张 7+1 + 2 张 6+2</div></div>
-    <div class="m"><div class="k">累计投入</div><div class="v" id="m2">¥0</div><div class="s">按 2 元/注</div></div>
-    <div class="m"><div class="k">累计回收</div><div class="v" id="m3">¥0</div><div class="s">含固定奖与浮动奖</div></div>
-    <div class="m"><div class="k">累计盈亏</div><div class="v" id="m4">¥0</div><div class="s" id="m4s">返奖率 —</div></div>
+  <div class="card">
+    <div class="card-h"><h2>号码热力图（全历史）</h2><span class="tag" id="freq-tag"></span></div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">红球 · 01–33</div>
+    <div class="heat" id="heat-red"></div>
+    <div style="font-size:11px;color:var(--ink3);margin:18px 0 8px">蓝球 · 01–16</div>
+    <div class="heat b16" id="heat-blue"></div>
+    <div class="legend">
+      <span>少</span><i style="background:#F7D9D9"></i><i style="background:#E9A8A8"></i><i style="background:#D26565"></i><i style="background:#C00000"></i><span>多</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>和值分布</h2><span class="tag">红球 6 个之和 · 长期均值 101 · 每格 5 点</span></div>
+    <div class="dist" id="dist"></div>
+    <div class="dx"><span>40</span><span>80</span><span>101</span><span>120</span><span>160</span></div>
   </div>
 
   <div class="card">
@@ -145,32 +188,24 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
   </div>
 
   <div class="card">
-    <div class="card-h"><h2>号码频次（全历史）</h2><span class="tag" id="freq-tag"></span></div>
-    <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">红球</div><div class="freq" id="freq"></div>
-    <div style="font-size:11px;color:var(--ink3);margin:16px 0 6px">蓝球</div><div class="freq" id="freq2"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-h"><h2>策略表现</h2><span class="tag">基线：单注期望命中 1.09 个红球</span></div>
+    <div class="card-h"><h2>票型表现</h2><span class="tag">基线：单注期望命中 1.09 个红球</span></div>
     <div class="scroll"><div id="strat"></div></div>
   </div>
 
   <div class="card">
-    <div class="card-h"><h2>最近 40 期开奖</h2><span class="tag">源：福彩官网</span></div>
+    <div class="card-h"><h2>最近 30 期开奖</h2><span class="tag">红球实心 = 当期命中</span></div>
     <div class="scroll"><div id="recent"></div></div>
   </div>
 
   <div class="note">
-    <b>关于概率，必须先说清楚。</b>双色球红球 33 选 6、蓝球 16 选 1，共 17,721,088 种组合，任何一注中一等奖的概率恒为 1/17,721,088。
-    每期摇奖相互独立，历史频次、遗漏值、冷热号都<b>不能</b>提高任何号码的中奖概率。
-    本页的选号只做一件事：让 5 组号码的结构（和值 92–112、奇偶 2:4/3:3/4:2、三区不空区、连号≤1、与上期重号 0–2）落在历史主流区间内，
-    并排除 2003 年以来已开出过的组合。复盘能改进的是过程质量与成本纪律，<b>不是中奖概率</b>。
-    双色球返奖率约 51%，长期购买为负期望，请理性购彩。
+    <b>关于概率，必须先说清楚。</b>红球 33 选 6、蓝球 16 选 1，共 17,721,088 种组合，任何一注中一等奖的概率恒为 1/17,721,088。
+    复式只是把多注装进一张票，<b>每元钱的期望完全一样</b>。每期摇奖相互独立，历史频次、冷热号、票型切换都<b>不能</b>提高中奖概率。
+    复盘能改进的是过程质量与成本纪律。<b>双色球返奖率约 51%，长期购买为负期望。</b>
   </div>
 
   <footer>
     每期开奖后自动更新 · <span id="ft">—</span><br>
-    数据仅供存档与研究，不构成任何投注建议
+    <a href="./fate.html">运势选号（文化娱乐玩法，与中奖概率无关）</a>
   </footer>
 </div>
 
@@ -178,22 +213,11 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
 const pad = n => String(n).padStart(2, '0');
 const money = n => (n < 0 ? '-¥' : '¥') + Math.abs(n || 0).toLocaleString('zh-CN');
 const WD = ['日','一','二','三','四','五','六'];
-
-function balls(reds, blue, small) {
-  const cls = small ? 'ball sm' : 'ball';
-  const blues = Array.isArray(blue) ? blue : [blue];
-  return reds.map(x => `<span class="${cls} r">${pad(x)}</span>`).join('') +
-         `<span class="plus">+</span>` +
-         blues.map(b => `<span class="${cls} b">${pad(b)}</span>`).join('');
-}
-
 const REMOTE_DATA = 'https://raw.githubusercontent.com/liaolingjian888/ssb/main/data.json';
 
 function getJSON(url) {
-  return fetch(url, { cache: 'no-store' })
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  return fetch(url, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 }
-
 function load() {
   if (window.__DATA__) { render(window.__DATA__); return; }
   getJSON(REMOTE_DATA + '?t=' + Date.now())
@@ -201,52 +225,57 @@ function load() {
     .then(render)
     .catch(e => {
       document.getElementById('next-tag').textContent = '数据加载失败';
-      document.getElementById('review').innerHTML =
-        '<div class="empty">数据源暂时不可达，稍后刷新重试。</div>';
+      document.getElementById('review').innerHTML = '<div class="empty">数据源暂时不可达，稍后刷新重试。</div>';
       console.error(e);
     });
 }
+function balls(reds, blues, small, winSet) {
+  const cls = small ? 'ball sm' : 'ball';
+  const bs = Array.isArray(blues) ? blues : [blues];
+  const hit = x => winSet && winSet.has(x) ? ' hit' : '';
+  return reds.map(x => `<span class="${cls} r${hit(x)}">${pad(x)}</span>`).join('') +
+         `<span class="plus">+</span>` +
+         bs.map(b => `<span class="${cls} b${hit(b)}">${pad(b)}</span>`).join('');
+}
+const notesOf = s => {
+  const blues = Array.isArray(s.b) ? s.b.length : 1;
+  let c = 1, k = s.r.length;
+  for (let i = 0; i < 6; i++) c = c * (k - i) / (i + 1);
+  return Math.round(c) * blues;
+};
 
 function render(d) {
   const hist = d.history || [];
   document.getElementById('hn').textContent = hist.length.toLocaleString('zh-CN');
   document.getElementById('updated').textContent = '更新于 ' + d.updated;
   document.getElementById('ft').textContent = '数据截至 ' + (hist.length ? hist[hist.length-1].p + ' 期' : '—');
+  document.getElementById('ov1').innerHTML = hist.length.toLocaleString('zh-CN') + '<small>期</small>';
 
-  // 下一期
   const n = d.next;
+  document.getElementById('ov2').textContent = n.p;
   document.getElementById('np').textContent = n.p;
   const dt = new Date(n.d + 'T00:00:00');
   document.getElementById('nd').textContent = n.d + '（周' + WD[dt.getDay()] + '）';
-  document.getElementById('nc').textContent = n.sets.length + ' 组 · ' + (n.sets.length*2) + ' 元';
-  document.getElementById('next-tag').textContent = '预计 21:15 开奖';
-  const notesOf = s => {
-    const blues = Array.isArray(s.b) ? s.b.length : 1;
-    let c = 1, k = s.r.length;
-    for (let i = 0; i < 6; i++) c = c * (k - i) / (i + 1);
-    return Math.round(c) * blues;
-  };
   let totalNotes = 0;
   document.getElementById('next-sets').innerHTML = n.sets.map(s => {
     const sum = s.r.reduce((a,b)=>a+b,0);
     const odd = s.r.filter(x=>x%2).length;
-    const nt = notesOf(s);
-    totalNotes += nt;
-    return `<div class="set">
-      <span class="set-name" style="width:88px">${s.n}</span>
-      <span class="balls">${balls(s.r, s.b)}</span>
-      <span class="set-meta">${nt} 注 · ${nt*2} 元 · 和值 ${sum} · 奇偶 ${odd}:${s.r.length-odd}</span>
+    const nt = notesOf(s); totalNotes += nt;
+    const parts = s.n.split(' ');
+    return `<div class="ticket">
+      <div class="tk-name"><b>${parts[0]}</b>${parts.slice(1).join(' ')}</div>
+      <div class="balls">${balls(s.r, s.b)}</div>
+      <div class="tk-meta">${nt} 注 · ${nt*2} 元<br>和值 ${sum} · 奇偶 ${odd}:${s.r.length-odd}</div>
     </div>`;
   }).join('');
-  document.getElementById('nc').textContent =
-    `${n.sets.length} 张票 · ${totalNotes} 注 · ${totalNotes*2} 元`;
-  if (n.form) {
-    document.getElementById('next-tag').textContent = `票型 ${n.form} · ${n.form_desc || ''}`;
+  document.getElementById('nc').textContent = `${n.sets.length} 张票 · ${totalNotes} 注 · ${totalNotes*2} 元`;
+  document.getElementById('next-tag').textContent = n.form ? `票型 ${n.form}` : '';
+  if (n.form_why) {
+    const w = document.getElementById('form-why');
+    w.style.display = 'block';
+    w.textContent = n.form_why;
   }
-  const whyEl = document.getElementById('form-why');
-  if (whyEl && n.form_why) whyEl.textContent = n.form_why;
 
-  // 复盘
   const lr = d.last_review;
   const rv = document.getElementById('review');
   if (!lr) {
@@ -254,92 +283,102 @@ function render(d) {
     rv.innerHTML = `<div class="empty">还没有可复盘的期次。${n.p} 期开奖后，这里会显示 4 张票的命中与盈亏。</div>`;
   } else {
     document.getElementById('rv-tag').textContent = lr.p + ' · ' + lr.d;
-    const pl = lr.pl;
+    const win = new Set(lr.r);
     const rows = (lr.tickets || []).map(t => `<tr>
       <td>${t.n}</td>
-      <td class="mono">${t.r.map(pad).join(' ')} <span class="plus">+</span> ${(t.b||[]).map(pad).join(' ')}</td>
+      <td class="mono">${t.r.map(x=>`<span style="color:${win.has(x)?'var(--red)':'inherit'};font-weight:${win.has(x)?'500':'400'}">${pad(x)}</span>`).join(' ')}
+        <span class="plus">+</span> ${(t.b||[]).map(x=>`<span style="color:${x===lr.b?'var(--navy)':'inherit'};font-weight:${x===lr.b?'500':'400'}">${pad(x)}</span>`).join(' ')}</td>
       <td class="num">${t.notes}</td>
       <td class="num">${t.max_rh}</td>
       <td>${t.win_notes ? '<span class="pill win">中 '+t.win_notes+' 注</span>' : '<span class="pill miss">未中</span>'}</td>
       <td class="num">${t.prize ? money(t.prize) : '—'}</td>
     </tr>`).join('');
     rv.innerHTML = `
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
-        <span style="font-size:12px;color:var(--ink2)">开奖</span>
+      <div class="rev-head">
+        <span class="lbl">开奖</span>
         <span class="balls">${balls(lr.r, lr.b)}</span>
-        <span style="font-size:12px;color:var(--ink3)">一等奖 ${d.latest.p1} 注 · 单注 ${money(d.latest.p1amt)}</span>
-        <span style="margin-left:auto;font-size:13px;font-weight:500;color:${pl>0?'var(--red)':'var(--green)'}">
-          盈亏 ${pl>0?'+':''}${pl} 元 · 最高 ${lr.best}</span>
+        <span class="lbl">一等奖 ${d.latest.p1} 注 · ${money(d.latest.p1amt)}</span>
+        <span class="pl ${lr.pl>=0?'pos':'neg'}">${lr.pl>0?'+':''}${lr.pl} 元 · ${lr.best}</span>
       </div>
       <div class="scroll"><table>
-        <thead><tr><th>票</th><th>号码</th><th class="num">注数</th><th class="num">最多中红</th><th>中奖注数</th><th class="num">奖金</th></tr></thead>
+        <thead><tr><th>票</th><th>号码（红色 = 命中）</th><th class="num">注数</th><th class="num">最多中红</th><th>中奖注数</th><th class="num">奖金</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
   }
 
-  // 指标
   const st = d.stats || {};
-  document.getElementById('m1').textContent = st.periods || 0;
-  document.getElementById('m2').textContent = money(st.cost || 0);
-  document.getElementById('m3').textContent = money(st.prize || 0);
-  const m4 = document.getElementById('m4');
-  m4.textContent = (st.pl > 0 ? '+' : '') + money(st.pl || 0);
-  m4.className = 'v ' + (st.pl > 0 ? 'up' : st.pl < 0 ? 'down' : '');
-  document.getElementById('m4s').textContent = '返奖率 ' + (st.rate || 0) + '%（理论约 51%）';
+  document.getElementById('ov3').innerHTML = (st.periods || 0) + '<small>期</small>';
+  const ov4 = document.getElementById('ov4');
+  ov4.textContent = (st.pl > 0 ? '+' : '') + money(st.pl || 0);
+  ov4.className = 'v ' + (st.pl > 0 ? 'up' : st.pl < 0 ? 'down' : '');
+  document.getElementById('ov5').textContent = st.cost ? (st.rate || 0) + '%' : '—';
 
-  // 台账
   const lg = d.ledger || [];
   document.getElementById('ledger').innerHTML = lg.length ? `<table>
-    <thead><tr><th>期号</th><th>开奖</th><th>开奖号码</th><th class="num">注数</th><th class="num">投入</th><th class="num">回收</th><th class="num">盈亏</th><th>最高奖级</th></tr></thead>
+    <thead><tr><th>期号</th><th>开奖</th><th>开奖号码</th><th class="num">注数</th><th class="num">投入</th><th class="num">回收</th><th class="num">盈亏</th><th>最高</th></tr></thead>
     <tbody>${lg.map(e=>`<tr>
       <td class="mono">${e.p}</td><td class="mono">${e.d}</td>
       <td class="mono">${e.r.map(pad).join(' ')} <span class="plus">+</span> ${pad(e.b)}</td>
       <td class="num">${e.notes || '—'}</td><td class="num">${e.cost}</td><td class="num">${e.prize}</td>
       <td class="num" style="color:${e.pl>0?'var(--red)':e.pl<0?'var(--green)':'inherit'}">${e.pl>0?'+':''}${e.pl}</td>
-      <td>${e.best==='未中奖'?'<span class="pill miss">未中奖</span>':'<span class="pill win">'+e.best+'</span>'}</td>
+      <td>${e.best==='未中奖'?'<span class="pill miss">未中</span>':'<span class="pill win">'+e.best+'</span>'}</td>
     </tr>`).join('')}</tbody></table>` : '<div class="empty">还没有复盘记录</div>';
 
-  // 频次
   const rc = {}, bc = {};
   hist.forEach(h => { h.r.forEach(x => rc[x]=(rc[x]||0)+1); bc[h.b]=(bc[h.b]||0)+1; });
-  const rmax = Math.max(...Object.values(rc)), bmax = Math.max(...Object.values(bc));
-  const rmin = Math.min(...Object.values(rc)), bmin = Math.min(...Object.values(bc));
-  document.getElementById('freq-tag').textContent = `红球样本 ${(hist.length*6).toLocaleString()} 个 · 蓝球 ${hist.length.toLocaleString()} 个`;
-  const mk = (cnt, max, min, cls, len) => Array.from({length:len},(_,i)=>{
-    const k=i+1, v=cnt[k]||0;
-    const h = 10 + Math.round((v-min)/Math.max(max-min,1)*46);
-    return `<div class="fb ${cls}" title="${pad(k)} 号出现 ${v} 次">
-      <div class="bar" style="height:64px"><i style="height:${h}px"></i></div>
-      <div class="lb">${pad(k)}</div></div>`;
-  }).join('');
-  document.getElementById('freq').innerHTML = mk(rc, rmax, rmin, '', 33);
-  document.getElementById('freq2').innerHTML = mk(bc, bmax, bmin, 'blue', 16);
+  document.getElementById('freq-tag').textContent =
+    `红球样本 ${(hist.length*6).toLocaleString()} 个 · 蓝球 ${hist.length.toLocaleString()} 个`;
+  const heat = (cnt, len, el, rgb) => {
+    const vals = Object.keys(cnt).map(Number).map(k=>cnt[k]);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    document.getElementById(el).innerHTML = Array.from({length:len},(_,i)=>{
+      const k=i+1, v=cnt[k]||0;
+      const t = (v-mn)/Math.max(mx-mn,1);
+      const dark = t > 0.55;
+      const bg = `rgba(${rgb},${(0.10 + t*0.88).toFixed(2)})`;
+      const fg = dark ? '#fff' : `rgb(${rgb})`;
+      return `<div class="hc" style="background:${bg};color:${fg}" title="${pad(k)} 号出现 ${v} 次">
+        <span class="n">${pad(k)}</span><span class="c">${v}</span></div>`;
+    }).join('');
+  };
+  heat(rc, 33, 'heat-red', '192,0,0');
+  heat(bc, 16, 'heat-blue', '28,65,150');
 
-  // 策略
+  const bins = {}, BIN = 5;
+  hist.forEach(h => { const s = h.r.reduce((a,b)=>a+b,0); const k = Math.floor(s/BIN)*BIN; bins[k]=(bins[k]||0)+1; });
+  const keys = Object.keys(bins).map(Number).sort((a,b)=>a-b);
+  const lo = Math.min(...keys), hi = Math.max(...keys);
+  const arr = [];
+  for (let k = lo; k <= hi; k += BIN) arr.push([k, bins[k] || 0]);
+  const maxv = Math.max(...arr.map(a=>a[1]));
+  document.getElementById('dist').innerHTML = arr.map(([k,v])=>{
+    const h = Math.max(1, Math.round(v/maxv*100));
+    const on = (k <= 101 && k+BIN > 101) ? ' on' : '';
+    return `<div class="db${on}" style="height:${h}%" title="${k}–${k+BIN-1}：${v} 期"></div>`;
+  }).join('');
+
   const sp = (st.strategy || []);
   document.getElementById('strat').innerHTML = sp.length ? `<table>
-    <thead><tr><th>思路</th><th class="num">投注注数</th><th class="num">平均红球命中</th><th class="num">相对基线</th><th class="num">累计奖金</th></tr></thead>
+    <thead><tr><th>票型</th><th class="num">期数</th><th class="num">注数</th><th class="num">平均最多中红</th><th class="num">相对基线</th><th class="num">累计奖金</th></tr></thead>
     <tbody>${sp.map(s=>`<tr>
-      <td>${s.name}</td><td class="num">${s.n}</td>
+      <td>${s.name}</td><td class="num">${s.n}</td><td class="num">${s.notes || '—'}</td>
       <td class="num">${s.avg_hit}</td>
       <td class="num">${(s.avg_hit-1.09).toFixed(2)}</td>
       <td class="num">${money(s.prize)}</td></tr>`).join('')}</tbody></table>`
-    : '<div class="empty">样本不足。每个思路需累计数十注后才有参考价值，且差异很可能只是随机噪声。</div>';
+    : '<div class="empty">样本不足。需累计数十期后才有参考价值，且差异很可能只是随机噪声。</div>';
 
-  // 最近开奖
-  const rec = hist.slice(-40).reverse();
+  const rec = hist.slice(-30).reverse();
   document.getElementById('recent').innerHTML = `<table>
-    <thead><tr><th>期号</th><th>日期</th><th>开奖号码</th><th class="num">和值</th><th class="num">一等奖</th><th class="num">销量(亿)</th></tr></thead>
+    <thead><tr><th>期号</th><th>日期</th><th>开奖号码</th><th class="num">和值</th><th class="num">一等奖</th><th class="num">销量</th></tr></thead>
     <tbody>${rec.map(h=>{
       const sum = h.r.reduce((a,b)=>a+b,0);
       return `<tr><td class="mono">${h.p}</td><td class="mono">${h.d}</td>
-        <td><span class="balls">${balls(h.r,h.b,true)}</span></td>
+        <td><span class="balls">${balls(h.r,h.b,true,new Set(h.r))}</span></td>
         <td class="num">${sum}</td>
         <td class="num">${h.p1 ? h.p1+' 注' : '空开'}</td>
-        <td class="num">${h.sales ? (h.sales/1e8).toFixed(2) : '—'}</td></tr>`;
+        <td class="num">${h.sales ? (h.sales/1e8).toFixed(2)+' 亿' : '—'}</td></tr>`;
     }).join('')}</tbody></table>`;
 }
-
 load();
 </script>
 </body>
