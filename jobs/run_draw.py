@@ -315,7 +315,7 @@ def next_period(draw):
 
 # ---------------- 推送 ----------------
 def push(title, text):
-    """优先读环境变量（GitHub Secrets），其次读 data/push.json"""
+    """优先读环境变量（GitHub Secrets），其次读 data/push.json；text 为 Markdown"""
     key = os.environ.get("WECOM_WEBHOOK", "")
     sck = os.environ.get("SERVERCHAN_KEY", "")
     cfg_f = ROOT / "data" / "push.json"
@@ -326,19 +326,28 @@ def push(title, text):
             sck = sck or cfg.get("serverchan_key", "")
         except Exception as e:
             print(f"[推送] 读 data/push.json 失败：{e}", file=sys.stderr)
+
     sent = []
-    if key:
-        url = f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={key}"
-        body = json.dumps({"msgtype": "text", "text": {"content": f"{title}\n{text}"}}).encode()
-        req = urllib.request.Request(url, data=body,
-                                     headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            sent.append("wecom:" + r.read().decode()[:40])
     if sck:
         url = f"https://sctapi.ftqq.com/{sck}.send"
-        data = urllib.parse.urlencode({"title": title, "desp": text}).encode()
-        with urllib.request.urlopen(urllib.request.Request(url, data=data), timeout=15) as r:
-            sent.append("serverchan:" + r.read().decode()[:40])
+        data = urllib.parse.urlencode({
+            "title": title,
+            "desp": text,
+            "short": title,
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=data,
+                                     headers={"Content-Type": "application/x-www-form-urlencoded"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            body = r.read().decode("utf-8", "replace")
+        sent.append("serverchan:" + body[:60])
+    if key:
+        url = f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={key}"
+        payload = {"msgtype": "markdown", "markdown": {"content": f"**{title}**\n\n{text}"}}
+        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"),
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            body = r.read().decode("utf-8", "replace")
+        sent.append("wecom:" + body[:60])
     return sent
 
 
@@ -439,28 +448,56 @@ def main():
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"[输出] {OUT}")
 
-    # 微信推送文案
+    _wd = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    nxt_week = _wd[date.fromisoformat(nd).weekday()]
+
+    # 微信推送（Markdown，Server酱/企微机器人都能渲染）
+    def ball_row(reds, blue, unit="　"):
+        return "**" + " ".join(f"{x:02d}" for x in reds) + "**" + unit + "＋　**" + f"{blue:02d}" + "**"
+
     def build_message():
-        L = []
-        L.append(f"【下期 {nxt}】{nd}")
+        md = []
+        md.append(f"### 第 {nxt} 期　{nxt_week}")
+        md.append("")
+        md.append(f"共 {len(sets)} 组 · 投入 {len(sets) * 2} 元 · 开奖 21:15")
+        md.append("")
         for s in sets:
-            L.append(f"{s['n']}  " + " ".join(f"{x:02d}" for x in s["r"]) + f" + {s['b']:02d}")
+            md.append(f"- **{s['n']}**　{ball_row(s['r'], s['b'])}")
         if detail:
-            L.append("")
-            L.append(f"—— {detail['p']} 复盘 ——")
-            L.append("开奖 " + " ".join(f"{x:02d}" for x in detail["r"]) + f" + {detail['b']:02d}")
-            L.append("｜".join(f"{r['name']}中{r['rh']}红" for r in detail["res"]))
-            L.append(f"投入{detail['cost']} 回收{detail['prize']} "
-                     f"盈亏{detail['pl']:+} 最高{detail['best']}")
+            md.append("")
+            md.append("---")
+            md.append("")
+            md.append(f"### 第 {detail['p']} 期复盘")
+            md.append("")
+            md.append(f"开奖　{ball_row(detail['r'], detail['b'])}")
+            md.append("")
+            md.append(f"一等奖 {latest['p1']} 注 · 单注 {latest['p1amt'] / 10000:.1f} 万"
+                      if latest.get("p1amt") else "")
+            md.append("")
+            for r in detail["res"]:
+                tag = "命中" if r["rh"] else "未中"
+                star = "中奖 " + TIER[r["tier"]] if r["tier"] else "未中奖"
+                md.append(f"- {r['name']}　红球 {r['rh']} 个　蓝球 {'中' if r['bh'] else '—'}　{star}")
+            md.append("")
+            sign = "+" if detail["pl"] >= 0 else ""
+            md.append(f"投入 **{detail['cost']}** 元　回收 **{detail['prize']}** 元　"
+                      f"盈亏 **{sign}{detail['pl']}** 元")
             if cost_all:
                 rate = prize_all / cost_all * 100
-                L.append(f"累计{len(st['ledger'])}期 成本{cost_all} 回收{prize_all} "
-                         f"盈亏{prize_all - cost_all:+} 返奖率{rate:.1f}%")
-        L.append("")
-        L.append("单期未中是数学常态，复盘只改进过程，不提高中奖概率。")
-        return "\n".join(L)
+                md.append("")
+                md.append(f"累计 {len(st['ledger'])} 期　投入 {cost_all} 元　回收 {prize_all} 元　"
+                          f"盈亏 **{prize_all - cost_all:+}** 元　返奖率 {rate:.1f}%")
+        md.append("")
+        md.append("---")
+        md.append("")
+        md.append("*单期未中是数学常态；复盘只改进过程，不提高中奖概率。*")
+        return "\n".join(x for x in md if x is not None)
 
-    title = f"双色球 {nxt} 期号码" + (f" · {detail['p']} 复盘" if detail else "")
+    if detail:
+        title = f"{nxt} 期号码已出 · {detail['p']} {detail['best']}"
+    else:
+        title = f"{nxt} 期号码已出 · {len(sets)} 组"
+
     force = "--force-push" in sys.argv
     try:
         if not (added or reviewed_now or force):
