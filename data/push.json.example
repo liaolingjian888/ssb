@@ -1,0 +1,4 @@
+{
+  "wecom_webhook": "企业微信群机器人 webhook 里 key= 后面那串",
+  "serverchan_key": "SCT 开头的 SendKey"
+}
