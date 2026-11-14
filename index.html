@@ -184,13 +184,22 @@ function balls(reds, blue, small) {
          `<span class="plus">+</span><span class="${cls} b">${pad(blue)}</span>`;
 }
 
+const REMOTE_DATA = 'https://raw.githubusercontent.com/liaolingjian888/ssb/main/data.json';
+
+function getJSON(url) {
+  return fetch(url, { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+}
+
 function load() {
   if (window.__DATA__) { render(window.__DATA__); return; }
-  fetch('./data.json?_=' + Date.now())
-    .then(r => r.json())
+  getJSON('./data.json?t=' + Date.now())
+    .catch(() => getJSON(REMOTE_DATA + '?t=' + Date.now()))
     .then(render)
     .catch(e => {
       document.getElementById('next-tag').textContent = '数据加载失败';
+      document.getElementById('review').innerHTML =
+        '<div class="empty">数据源暂时不可达，稍后刷新重试。</div>';
       console.error(e);
     });
 }

@@ -10,16 +10,13 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
-  group: ssb-pages
+  group: ssb-task
   cancel-in-progress: false
 
 jobs:
   task:
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,29 +42,5 @@ jobs:
             echo "无变化，跳过提交"
           else
             git commit -m "chore: 更新 $(date -u +%Y-%m-%d\ %H:%M) UTC"
-            git pull --rebase --autostash origin main || true
             git push
           fi
-
-  deploy:
-    needs: task
-    if: always() && (needs.task.result == 'success' || needs.task.result == 'skipped')
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - id: deployment
-        uses: actions/deploy-pages@v4
