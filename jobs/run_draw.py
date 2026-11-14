@@ -370,8 +370,8 @@ def main():
     print(f"[抓取] 新增 {len(added)} 期，最新 {st['history'][-1]['p']}")
 
     latest = st["history"][-1]
-    msg = []          # 本期复盘段
     detail = None
+    reviewed_now = False
 
     # 复盘
     if latest["p"] in st["tickets"]:
@@ -389,6 +389,7 @@ def main():
                 "res": res, "ts": time.strftime("%Y-%m-%d %H:%M"),
             }
             st["ledger"].append(detail)
+            reviewed_now = True
             print(f"[复盘] {latest['p']} {TIER[best]} 盈亏 {prize-cost:+}")
     else:
         print(f"[复盘] {latest['p']} 无投注记录")
@@ -460,9 +461,13 @@ def main():
         return "\n".join(L)
 
     title = f"双色球 {nxt} 期号码" + (f" · {detail['p']} 复盘" if detail else "")
+    force = "--force-push" in sys.argv
     try:
-        r = push(title, build_message())
-        print("[推送]", "已发送" if r else "未配置推送（缺 WECOM_WEBHOOK / SERVERCHAN_KEY）")
+        if not (added or reviewed_now or force):
+            print("[推送] 本期无新开奖也无新复盘，跳过（避免重复打扰）")
+        else:
+            r = push(title, build_message())
+            print("[推送]", "已发送" if r else "未配置推送（缺 WECOM_WEBHOOK / SERVERCHAN_KEY）")
     except Exception as e:
         print("[推送] 失败", e, file=sys.stderr)
 

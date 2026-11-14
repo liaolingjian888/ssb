@@ -34,7 +34,7 @@ jobs:
           SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
         run: |
           set -o pipefail
-          python -u jobs/run_draw.py 2>&1 | tee data/last_run.log
+          python -u jobs/run_draw.py --force-push 2>&1 | tee data/last_run.log
 
       - name: 提交结果
         if: always()
