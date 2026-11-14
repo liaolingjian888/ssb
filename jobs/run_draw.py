@@ -315,8 +315,17 @@ def next_period(draw):
 
 # ---------------- 推送 ----------------
 def push(title, text):
-    key = os.environ.get("WECOM_WEBHOOK")
-    sck = os.environ.get("SERVERCHAN_KEY")
+    """优先读环境变量（GitHub Secrets），其次读 data/push.json"""
+    key = os.environ.get("WECOM_WEBHOOK", "")
+    sck = os.environ.get("SERVERCHAN_KEY", "")
+    cfg_f = ROOT / "data" / "push.json"
+    if (not key or not sck) and cfg_f.exists():
+        try:
+            cfg = json.loads(cfg_f.read_text(encoding="utf-8"))
+            key = key or cfg.get("wecom_webhook", "")
+            sck = sck or cfg.get("serverchan_key", "")
+        except Exception as e:
+            print(f"[推送] 读 data/push.json 失败：{e}", file=sys.stderr)
     sent = []
     if key:
         url = f"https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key={key}"
