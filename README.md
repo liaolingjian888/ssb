@@ -1,0 +1,51 @@
+# 双色球 · 自动选号与复盘（网页版）
+
+一个不需要开机、不需要 WorkBuddy 常驻的双色球每期任务。
+云端定时跑一次，生成 5 组号码、判定上期中奖情况，结果直接更新到网页。
+
+## 目录
+
+```
+index.html              网页（纯静态，读同目录 data.json）
+data.json               每期生成的数据，网页直接消费（自动生成，勿手改）
+data/state.json         全部状态：3527 期历史 + 各期号码 + 复盘台账
+jobs/run_draw.py        每期任务脚本（纯标准库，无第三方依赖）
+.github/workflows/draw.yml   定时任务（周二/四/日 22:00 北京时间）
+```
+
+## 它每期做什么
+
+1. 从中国福利彩票官网拉最新开奖，增量补进 `data/state.json` 的 history
+2. 若上一期登记过 5 组号码 → 逐注判定红球命中数、蓝球、奖级、奖金，写入台账
+3. 按历史结构约束生成下一期 5 组号码
+4. 重写 `data.json`，网页自动呈现
+5. 可选：把结果推送到微信（仓库 Secrets 里配 `WECOM_WEBHOOK` 或 `SERVERCHAN_KEY`）
+
+## 选号规则（固定，不由结果反向调整）
+
+- 和值 92–112（历史 46.1% 落在 90–115）
+- 奇偶比限 2:4 / 3:3 / 4:2（历史合计 82.9%）
+- 三区（1-11 / 12-22 / 23-33）不空区，最大区≤3 个（历史 77.1%）
+- 连号不超过 1 组（历史 ≥1 组占 65.3%）
+- 排除 2003 年以来已开出过的全部组合
+- 5 组之间红球重叠≤2 个，和值互不相同
+
+## 本地跑一次
+
+```bash
+python3 jobs/run_draw.py
+```
+
+## 部署到 GitHub Pages（无需服务器）
+
+1. 新建仓库，把本目录内容推到 `main`
+2. Settings → Pages → Source 选 `Deploy from a branch`，分支 `main`，目录 `/ (root)`
+3. Settings → Actions → General → Workflow permissions 选 `Read and write permissions`
+4. 需要微信推送就在 Settings → Secrets and variables → Actions 里加 `WECOM_WEBHOOK`
+5. Actions 页面点 `Run workflow` 手动跑一次验证
+
+## 必须说清楚的事
+
+双色球每期独立随机，任何一注中一等奖的概率恒为 1/17,721,088。
+上面所有约束只让号码结构更接近历史分布，**不提高中奖概率**。
+复盘能改进的是过程质量与成本纪律，不是中奖概率。返奖率约 51%，长期购买为负期望。

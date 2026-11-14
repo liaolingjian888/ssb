@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>双色球 · 自动选号与复盘</title>
+<style>
+:root{
+  --navy:#1C4196;--navy-l:#E8EEF9;--orange:#F7941E;
+  --red:#C00000;--red-l:#FCEDED;--green:#0E7A4E;
+  --ink:#1A1A1A;--ink2:#5F5E5A;--ink3:#8C8C88;
+  --line:#E6E6E3;--bg:#FAFAF8;--card:#FFFFFF;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px 72px}
+
+header{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:10}
+.hd{max-width:1040px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:9px;font-weight:500;font-size:16px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--red)}
+.dot.b{background:var(--navy)}
+.hd-sub{font-size:12px;color:var(--ink3);margin-left:auto}
+.live{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--green);
+  background:#EAF6F0;padding:3px 9px;border-radius:20px}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--green);display:block}
+
+h1{font-size:22px;font-weight:500;margin:32px 0 6px;letter-spacing:-.2px}
+.lead{font-size:13px;color:var(--ink2);margin-bottom:24px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px}
+.card-h{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.card-h h2{font-size:14px;font-weight:500;color:var(--ink)}
+.card-h .tag{font-size:11px;color:var(--ink3);margin-left:auto}
+
+.next-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.period{font-size:26px;font-weight:500;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.period small{font-size:13px;color:var(--ink2);font-weight:400;margin-left:8px}
+.count{font-size:12px;color:var(--navy);background:var(--navy-l);padding:4px 10px;border-radius:20px}
+
+.set{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px dashed var(--line);flex-wrap:wrap}
+.set:first-of-type{border-top:none}
+.set-name{font-size:12px;color:var(--ink2);width:72px;flex:none}
+.balls{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ball{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:500;font-variant-numeric:tabular-nums;flex:none}
+.ball.r{background:var(--red-l);color:var(--red);border:1px solid #F3D2D2}
+.ball.b{background:var(--navy-l);color:var(--navy);border:1px solid #CFDCF2}
+.ball.sm{width:26px;height:26px;font-size:12px}
+.plus{color:var(--ink3);font-size:12px;margin:0 1px}
+.set-meta{margin-left:auto;font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.m{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.m .k{font-size:11px;color:var(--ink3);margin-bottom:6px}
+.m .v{font-size:24px;font-weight:500;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.m .v.up{color:var(--red)}
+.m .v.down{color:var(--green)}
+.m .s{font-size:11px;color:var(--ink3);margin-top:2px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:11px;font-weight:400;color:var(--ink3);text-align:left;padding:8px 10px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid #F2F2EF;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.num{text-align:right}
+.mono{font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.pill.win{background:var(--red-l);color:var(--red)}
+.pill.miss{background:#F2F2EF;color:var(--ink3)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+.freq{display:grid;grid-template-columns:repeat(auto-fill,minmax(19px,1fr));gap:5px;margin-top:4px}
+.fb{display:flex;flex-direction:column;align-items:center;gap:3px}
+.fb .bar{width:100%;background:var(--red-l);border-radius:3px 3px 0 0;position:relative;min-height:2px}
+.fb .bar i{position:absolute;bottom:0;left:0;right:0;background:var(--red);border-radius:3px 3px 0 0;display:block}
+.fb.blue .bar{background:var(--navy-l)}
+.fb.blue .bar i{background:var(--navy)}
+.fb .lb{font-size:10px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.fb{position:relative}
+
+.note{font-size:12px;color:var(--ink2);background:#FFFBF3;border:1px solid #F5E6C8;
+  border-radius:10px;padding:14px 16px;line-height:1.75}
+.note b{font-weight:500;color:var(--ink)}
+footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-height:1.8}
+.empty{font-size:13px;color:var(--ink3);padding:18px 0;text-align:center}
+@media(max-width:640px){
+  .set-name{width:100%}
+  .set-meta{margin-left:0;width:100%}
+  h1{font-size:19px}
+  .period{font-size:22px}
+  .card{padding:18px 16px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="brand"><span class="dot"></span><span class="dot b"></span>双色球 · 自动选号与复盘</div>
+    <div class="hd-sub" id="updated">读取中…</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <h1>每期 5 组号码，开奖后自动复盘</h1>
+  <p class="lead">数据源：中国福利彩票官网 · 历史样本 <span id="hn">—</span> 期 · 每期开奖后自动抓取、判定、生成下一期</p>
+
+  <div class="card">
+    <div class="card-h">
+      <h2>下一期号码</h2>
+      <span class="tag" id="next-tag"></span>
+    </div>
+    <div class="next-top">
+      <div class="period"><span id="np">—</span><small id="nd">—</small></div>
+      <span class="count" id="nc">5 组</span>
+      <span class="live"><i></i>待开奖</span>
+    </div>
+    <div id="next-sets"></div>
+  </div>
+
+  <div class="card" id="review-card">
+    <div class="card-h">
+      <h2>最近一期复盘</h2>
+      <span class="tag" id="rv-tag"></span>
+    </div>
+    <div id="review"></div>
+  </div>
+
+  <div class="metrics" style="margin-bottom:18px">
+    <div class="m"><div class="k">已复盘期数</div><div class="v" id="m1">0</div><div class="s">每期 5 注 · 10 元</div></div>
+    <div class="m"><div class="k">累计投入</div><div class="v" id="m2">¥0</div><div class="s">按 2 元/注</div></div>
+    <div class="m"><div class="k">累计回收</div><div class="v" id="m3">¥0</div><div class="s">含固定奖与浮动奖</div></div>
+    <div class="m"><div class="k">累计盈亏</div><div class="v" id="m4">¥0</div><div class="s" id="m4s">返奖率 —</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>复盘台账</h2><span class="tag">按开奖时间倒序</span></div>
+    <div class="scroll"><div id="ledger"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>号码频次（全历史）</h2><span class="tag" id="freq-tag"></span></div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">红球</div><div class="freq" id="freq"></div>
+    <div style="font-size:11px;color:var(--ink3);margin:16px 0 6px">蓝球</div><div class="freq" id="freq2"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>策略表现</h2><span class="tag">基线：单注期望命中 1.09 个红球</span></div>
+    <div class="scroll"><div id="strat"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>最近 40 期开奖</h2><span class="tag">源：福彩官网</span></div>
+    <div class="scroll"><div id="recent"></div></div>
+  </div>
+
+  <div class="note">
+    <b>关于概率，必须先说清楚。</b>双色球红球 33 选 6、蓝球 16 选 1，共 17,721,088 种组合，任何一注中一等奖的概率恒为 1/17,721,088。
+    每期摇奖相互独立，历史频次、遗漏值、冷热号都<b>不能</b>提高任何号码的中奖概率。
+    本页的选号只做一件事：让 5 组号码的结构（和值 92–112、奇偶 2:4/3:3/4:2、三区不空区、连号≤1、与上期重号 0–2）落在历史主流区间内，
+    并排除 2003 年以来已开出过的组合。复盘能改进的是过程质量与成本纪律，<b>不是中奖概率</b>。
+    双色球返奖率约 51%，长期购买为负期望，请理性购彩。
+  </div>
+
+  <footer>
+    每期开奖后自动更新 · <span id="ft">—</span><br>
+    数据仅供存档与研究，不构成任何投注建议
+  </footer>
+</div>
+
+<script>
+const pad = n => String(n).padStart(2, '0');
+const money = n => '¥' + (n || 0).toLocaleString('zh-CN');
+const WD = ['日','一','二','三','四','五','六'];
+
+function balls(reds, blue, small) {
+  const cls = small ? 'ball sm' : 'ball';
+  return reds.map(x => `<span class="${cls} r">${pad(x)}</span>`).join('') +
+         `<span class="plus">+</span><span class="${cls} b">${pad(blue)}</span>`;
+}
+
+function load() {
+  if (window.__DATA__) { render(window.__DATA__); return; }
+  fetch('./data.json?_=' + Date.now())
+    .then(r => r.json())
+    .then(render)
+    .catch(e => {
+      document.getElementById('next-tag').textContent = '数据加载失败';
+      console.error(e);
+    });
+}
+
+function render(d) {
+  const hist = d.history || [];
+  document.getElementById('hn').textContent = hist.length.toLocaleString('zh-CN');
+  document.getElementById('updated').textContent = '更新于 ' + d.updated;
+  document.getElementById('ft').textContent = '数据截至 ' + (hist.length ? hist[hist.length-1].p + ' 期' : '—');
+
+  // 下一期
+  const n = d.next;
+  document.getElementById('np').textContent = n.p;
+  const dt = new Date(n.d + 'T00:00:00');
+  document.getElementById('nd').textContent = n.d + '（周' + WD[dt.getDay()] + '）';
+  document.getElementById('nc').textContent = n.sets.length + ' 组 · ' + (n.sets.length*2) + ' 元';
+  document.getElementById('next-tag').textContent = '预计 21:15 开奖';
+  document.getElementById('next-sets').innerHTML = n.sets.map(s => {
+    const sum = s.r.reduce((a,b)=>a+b,0);
+    const odd = s.r.filter(x=>x%2).length;
+    return `<div class="set">
+      <span class="set-name">${s.n}</span>
+      <span class="balls">${balls(s.r, s.b)}</span>
+      <span class="set-meta">和值 ${sum} · 奇偶 ${odd}:${6-odd}</span>
+    </div>`;
+  }).join('');
+
+  // 复盘
+  const lr = d.last_review;
+  const rv = document.getElementById('review');
+  if (!lr) {
+    document.getElementById('rv-tag').textContent = '首期待开奖';
+    rv.innerHTML = `<div class="empty">还没有可复盘的期次。${n.p} 期开奖后，这里会显示 5 组的命中与盈亏。</div>`;
+  } else {
+    document.getElementById('rv-tag').textContent = lr.p + ' · ' + lr.d;
+    const pl = lr.pl;
+    const rows = lr.res.map(r => `<tr>
+      <td>${r.name}</td>
+      <td class="mono">${r.r.map(pad).join(' ')} <span class="plus">+</span> ${pad(r.b)}</td>
+      <td class="num">${r.rh}</td>
+      <td>${r.bh ? '<span class="pill win">中</span>' : '<span class="pill miss">未中</span>'}</td>
+      <td>${r.tier ? '<span class="pill win">'+['','一等奖','二等奖','三等奖','四等奖','五等奖','六等奖'][r.tier]+'</span>' : '—'}</td>
+      <td class="num">${r.prize ? money(r.prize) : '—'}</td>
+    </tr>`).join('');
+    rv.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+        <span style="font-size:12px;color:var(--ink2)">开奖</span>
+        <span class="balls">${balls(lr.r, lr.b)}</span>
+        <span style="font-size:12px;color:var(--ink3)">一等奖 ${d.latest.p1} 注 · 单注 ${money(d.latest.p1amt)}</span>
+        <span style="margin-left:auto;font-size:13px;font-weight:500;color:${pl>0?'var(--red)':'var(--green)'}">
+          盈亏 ${pl>0?'+':''}${pl} 元 · 最高 ${lr.best}</span>
+      </div>
+      <div class="scroll"><table>
+        <thead><tr><th>思路</th><th>号码</th><th class="num">红球命中</th><th>蓝球</th><th>奖级</th><th class="num">奖金</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  }
+
+  // 指标
+  const st = d.stats || {};
+  document.getElementById('m1').textContent = st.periods || 0;
+  document.getElementById('m2').textContent = money(st.cost || 0);
+  document.getElementById('m3').textContent = money(st.prize || 0);
+  const m4 = document.getElementById('m4');
+  m4.textContent = (st.pl > 0 ? '+' : '') + money(st.pl || 0);
+  m4.className = 'v ' + (st.pl > 0 ? 'up' : st.pl < 0 ? 'down' : '');
+  document.getElementById('m4s').textContent = '返奖率 ' + (st.rate || 0) + '%（理论约 51%）';
+
+  // 台账
+  const lg = d.ledger || [];
+  document.getElementById('ledger').innerHTML = lg.length ? `<table>
+    <thead><tr><th>期号</th><th>开奖</th><th>号码</th><th class="num">投入</th><th class="num">回收</th><th class="num">盈亏</th><th>最高奖级</th></tr></thead>
+    <tbody>${lg.map(e=>`<tr>
+      <td class="mono">${e.p}</td><td class="mono">${e.d}</td>
+      <td class="mono">${e.r.map(pad).join(' ')} <span class="plus">+</span> ${pad(e.b)}</td>
+      <td class="num">${e.cost}</td><td class="num">${e.prize}</td>
+      <td class="num" style="color:${e.pl>0?'var(--red)':e.pl<0?'var(--green)':'inherit'}">${e.pl>0?'+':''}${e.pl}</td>
+      <td>${e.best==='未中奖'?'<span class="pill miss">未中奖</span>':'<span class="pill win">'+e.best+'</span>'}</td>
+    </tr>`).join('')}</tbody></table>` : '<div class="empty">还没有复盘记录</div>';
+
+  // 频次
+  const rc = {}, bc = {};
+  hist.forEach(h => { h.r.forEach(x => rc[x]=(rc[x]||0)+1); bc[h.b]=(bc[h.b]||0)+1; });
+  const rmax = Math.max(...Object.values(rc)), bmax = Math.max(...Object.values(bc));
+  const rmin = Math.min(...Object.values(rc)), bmin = Math.min(...Object.values(bc));
+  document.getElementById('freq-tag').textContent = `红球样本 ${(hist.length*6).toLocaleString()} 个 · 蓝球 ${hist.length.toLocaleString()} 个`;
+  const mk = (cnt, max, min, cls, len) => Array.from({length:len},(_,i)=>{
+    const k=i+1, v=cnt[k]||0;
+    const h = 10 + Math.round((v-min)/Math.max(max-min,1)*46);
+    return `<div class="fb ${cls}" title="${pad(k)} 号出现 ${v} 次">
+      <div class="bar" style="height:64px"><i style="height:${h}px"></i></div>
+      <div class="lb">${pad(k)}</div></div>`;
+  }).join('');
+  document.getElementById('freq').innerHTML = mk(rc, rmax, rmin, '', 33);
+  document.getElementById('freq2').innerHTML = mk(bc, bmax, bmin, 'blue', 16);
+
+  // 策略
+  const sp = (st.strategy || []);
+  document.getElementById('strat').innerHTML = sp.length ? `<table>
+    <thead><tr><th>思路</th><th class="num">投注注数</th><th class="num">平均红球命中</th><th class="num">相对基线</th><th class="num">累计奖金</th></tr></thead>
+    <tbody>${sp.map(s=>`<tr>
+      <td>${s.name}</td><td class="num">${s.n}</td>
+      <td class="num">${s.avg_hit}</td>
+      <td class="num">${(s.avg_hit-1.09).toFixed(2)}</td>
+      <td class="num">${money(s.prize)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty">样本不足。每个思路需累计数十注后才有参考价值，且差异很可能只是随机噪声。</div>';
+
+  // 最近开奖
+  const rec = hist.slice(-40).reverse();
+  document.getElementById('recent').innerHTML = `<table>
+    <thead><tr><th>期号</th><th>日期</th><th>开奖号码</th><th class="num">和值</th><th class="num">一等奖</th><th class="num">销量(亿)</th></tr></thead>
+    <tbody>${rec.map(h=>{
+      const sum = h.r.reduce((a,b)=>a+b,0);
+      return `<tr><td class="mono">${h.p}</td><td class="mono">${h.d}</td>
+        <td><span class="balls">${balls(h.r,h.b,true)}</span></td>
+        <td class="num">${sum}</td>
+        <td class="num">${h.p1 ? h.p1+' 注' : '空开'}</td>
+        <td class="num">${h.sales ? (h.sales/1e8).toFixed(2) : '—'}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+load();
+</script>
+</body>
+</html>
