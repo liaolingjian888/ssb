@@ -361,24 +361,25 @@ def main():
     print(f"[抓取] 新增 {len(added)} 期，最新 {st['history'][-1]['p']}")
 
     latest = st["history"][-1]
-    msg_lines = []
+    msg = []          # 本期复盘段
+    detail = None
 
     # 复盘
     if latest["p"] in st["tickets"]:
         if any(x["p"] == latest["p"] for x in st["ledger"]):
             print(f"[复盘] {latest['p']} 已复盘，跳过")
+            detail = [x for x in st["ledger"] if x["p"] == latest["p"]][0]
         else:
             res = review(st["tickets"][latest["p"]], latest)
             cost = len(res) * 2
             prize = sum(r["prize"] for r in res)
             best = min((r["tier"] for r in res if r["tier"]), default=0)
-            st["ledger"].append({
+            detail = {
                 "p": latest["p"], "d": latest["d"], "r": latest["r"], "b": latest["b"],
                 "cost": cost, "prize": prize, "pl": prize - cost, "best": TIER[best],
                 "res": res, "ts": time.strftime("%Y-%m-%d %H:%M"),
-            })
-            msg_lines.append(f"【{latest['p']} 复盘】{' '.join(f'{x:02d}' for x in latest['r'])}+{latest['b']:02d}")
-            msg_lines.append(f"投入{cost} 回收{prize} 盈亏{prize-cost:+} 最高{TIER[best]}")
+            }
+            st["ledger"].append(detail)
             print(f"[复盘] {latest['p']} {TIER[best]} 盈亏 {prize-cost:+}")
     else:
         print(f"[复盘] {latest['p']} 无投注记录")
@@ -392,10 +393,6 @@ def main():
         sets = make_sets(st["history"], int(nxt))
         st["tickets"][nxt] = sets
         print(f"[选号] 生成 {nxt}（{nd}）{len(sets)} 组")
-
-    msg_lines.append(f"【{nxt}（{nd}）】")
-    for s in sets:
-        msg_lines.append(f"{s['n']} {' '.join(f'{x:02d}' for x in s['r'])} + {s['b']:02d}")
 
     # 统计
     cost_all = sum(x["cost"] for x in st["ledger"])
@@ -432,11 +429,33 @@ def main():
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"[输出] {OUT}")
 
-    if msg_lines:
-        try:
-            print("[推送]", push(msg_lines[0], "\n".join(msg_lines[1:])) or "未配置推送")
-        except Exception as e:
-            print("[推送] 失败", e, file=sys.stderr)
+    # 微信推送文案
+    def build_message():
+        L = []
+        L.append(f"【下期 {nxt}】{nd}")
+        for s in sets:
+            L.append(f"{s['n']}  " + " ".join(f"{x:02d}" for x in s["r"]) + f" + {s['b']:02d}")
+        if detail:
+            L.append("")
+            L.append(f"—— {detail['p']} 复盘 ——")
+            L.append("开奖 " + " ".join(f"{x:02d}" for x in detail["r"]) + f" + {detail['b']:02d}")
+            L.append("｜".join(f"{r['name']}中{r['rh']}红" for r in detail["res"]))
+            L.append(f"投入{detail['cost']} 回收{detail['prize']} "
+                     f"盈亏{detail['pl']:+} 最高{detail['best']}")
+            if cost_all:
+                rate = prize_all / cost_all * 100
+                L.append(f"累计{len(st['ledger'])}期 成本{cost_all} 回收{prize_all} "
+                         f"盈亏{prize_all - cost_all:+} 返奖率{rate:.1f}%")
+        L.append("")
+        L.append("单期未中是数学常态，复盘只改进过程，不提高中奖概率。")
+        return "\n".join(L)
+
+    title = f"双色球 {nxt} 期号码" + (f" · {detail['p']} 复盘" if detail else "")
+    try:
+        r = push(title, build_message())
+        print("[推送]", "已发送" if r else "未配置推送（缺 WECOM_WEBHOOK / SERVERCHAN_KEY）")
+    except Exception as e:
+        print("[推送] 失败", e, file=sys.stderr)
 
 
 if __name__ == "__main__":
