@@ -193,8 +193,8 @@ function getJSON(url) {
 
 function load() {
   if (window.__DATA__) { render(window.__DATA__); return; }
-  getJSON('./data.json?t=' + Date.now())
-    .catch(() => getJSON(REMOTE_DATA + '?t=' + Date.now()))
+  getJSON(REMOTE_DATA + '?t=' + Date.now())
+    .catch(() => getJSON('./data.json?t=' + Date.now()))
     .then(render)
     .catch(e => {
       document.getElementById('next-tag').textContent = '数据加载失败';
