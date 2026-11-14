@@ -11,7 +11,9 @@
 
 数据全部存在 data/state.json，随仓库一起提交，无需数据库。
 """
+import itertools
 import json
+import math
 import os
 import random
 import re
@@ -197,16 +199,60 @@ def amount_of(t, draw):
     return 0
 
 
+FORMS = [
+    ("7+1", "主攻一", 7, 1, "综合评分"),
+    ("7+1", "主攻二", 7, 1, "热号延续"),
+    ("6+2", "辅攻一", 6, 2, "冷号回补"),
+    ("6+2", "辅攻二", 6, 2, "区间均衡"),
+]
+
+
+def blues_of(t):
+    b = t.get("b", [])
+    return b if isinstance(b, list) else [b]
+
+
+def notes_of(t):
+    """复式拆成多少注"""
+    return math.comb(len(t["r"]), 6) * len(blues_of(t))
+
+
+def expand(t):
+    """展开成所有单注: (6红, 蓝)"""
+    for rs in itertools.combinations(sorted(t["r"]), 6):
+        for b in blues_of(t):
+            yield list(rs), b
+
+
 def review(tickets, draw):
+    """按票展开逐注判定，返回每票汇总 + 全局汇总"""
     win = set(draw["r"])
-    res = []
+    per, total_cost, total_prize = [], 0, 0
     for t in tickets:
-        rh = len(set(t["r"]) & win)
-        bh = int(t["b"] == draw["b"])
-        tier = tier_of(rh, bh)
-        res.append({"name": t["n"], "r": t["r"], "b": t["b"],
-                    "rh": rh, "bh": bh, "tier": tier, "prize": amount_of(tier, draw)})
-    return res
+        hits = []
+        for rs, b in expand(t):
+            rh = len(set(rs) & win)
+            bh = int(b == draw["b"])
+            tier = tier_of(rh, bh)
+            hits.append({"r": rs, "b": b, "rh": rh, "bh": bh,
+                         "tier": tier, "prize": amount_of(tier, draw)})
+        prize = sum(h["prize"] for h in hits)
+        cost = len(hits) * 2
+        best = min((h["tier"] for h in hits if h["tier"]), default=0)
+        per.append({"n": t["n"], "type": t.get("type", f'{len(t["r"])}+{len(blues_of(t))}'),
+                    "r": sorted(t["r"]), "b": blues_of(t), "notes": len(hits),
+                    "cost": cost, "prize": prize, "best": TIER[best],
+                    "win_notes": sum(1 for h in hits if h["tier"]),
+                    "max_rh": max(h["rh"] for h in hits),
+                    "hits": hits})
+        total_cost += cost
+        total_prize += prize
+    best_all = min((p["best"] for p in per if p["best"] != "未中奖"), default="未中奖",
+                   key=lambda x: list(TIER.values()).index(x) if x in TIER.values() else 99)
+    return {"tickets": per, "cost": total_cost, "prize": total_prize,
+            "pl": total_prize - total_cost, "best": best_all,
+            "win_notes": sum(p["win_notes"] for p in per),
+            "notes": sum(p["notes"] for p in per)}
 
 
 # ---------------- 选号 ----------------
@@ -253,51 +299,72 @@ def build_pools(history):
     }
 
 
-def struct_ok(nums):
+def struct_ok(nums, n_red):
     s = sum(nums)
-    if not (92 <= s <= 112):
-        return False
-    o = sum(x % 2 for x in nums)
-    if o in (0, 1, 5, 6):
-        return False
+    if n_red == 6:
+        if not (92 <= s <= 112):
+            return False
+        o = sum(x % 2 for x in nums)
+        if o in (0, 1, 5, 6):
+            return False
+        zmax = 3
+        cons = 1
+    else:                      # 7 红：均值 119，取 25%-75% 分位
+        if not (105 <= s <= 133):
+            return False
+        o = sum(x % 2 for x in nums)
+        if o not in (3, 4, 5):
+            return False
+        zmax = 4
+        cons = 2
     z = [sum(1 for x in nums if x <= 11), sum(1 for x in nums if 12 <= x <= 22),
          sum(1 for x in nums if x >= 23)]
-    if max(z) > 3 or min(z) == 0:
+    if max(z) > zmax or min(z) == 0:
         return False
-    return sum(1 for i in range(5) if nums[i + 1] - nums[i] == 1) <= 1
+    return sum(1 for i in range(len(nums) - 1) if nums[i + 1] - nums[i] == 1) <= cons
 
 
 def make_sets(history, seed):
+    """按 FORMS 生成 2 张 7+1 + 2 张 6+2"""
     pools = build_pools(history)
     drawn = {tuple(h["r"]) for h in history}
     rng = random.Random(seed)
-    sets, sums = [], set()
 
     bh = sorted(range(1, 17), key=lambda b: -pools["fall"].get(b, 0))
     bo = sorted(range(1, 17), key=lambda b: -pools["om"][b])
-    blues = []
-    for b in [bo[0], bh[0], bh[1], bh[2], bo[1]]:
-        if b not in blues:
-            blues.append(b)
 
-    for name, pool in pools["pools"]:
-        pool = sorted(set(pool))
-        if len(pool) < 6:
+    pool_map = dict((name, pool) for name, pool in pools["pools"])
+
+    # 蓝球候选序列：热号、冷号交替，保证 4 张票的 6 个蓝球互不相同
+    order = []
+    for i in range(8):
+        for b in (bh[i], bo[i]):
+            if b not in order:
+                order.append(b)
+
+    sets = []
+    for typ, tag, n_red, n_blue, strategy in FORMS:
+        pool = sorted(set(pool_map.get(strategy, [])))
+        if len(pool) < n_red:
             continue
         pick = None
-        for _ in range(60000):
-            cand = sorted(rng.sample(pool, 6))
-            if not struct_ok(cand) or tuple(cand) in drawn:
+        for _ in range(80000):
+            cand = sorted(rng.sample(pool, n_red))
+            if not struct_ok(cand, n_red):
                 continue
-            if sum(cand) in sums:
+            if n_red == 6 and tuple(cand) in drawn:
                 continue
-            if any(len(set(cand) & set(s["r"])) > 2 for s in sets):
+            if any(len(set(cand) & set(s["r"])) > 3 for s in sets):
                 continue
             pick = cand
             break
-        if pick:
-            sets.append({"n": name, "r": pick, "b": blues[len(sets)]})
-            sums.add(sum(pick))
+        if not pick:
+            continue
+        # 蓝球：在 4 张票之间做互不重复的覆盖（热号与冷号交替取）
+        slot = len(sets)
+        blues = [order[slot]] if n_blue == 1 else [order[slot], order[slot + 4]]
+        sets.append({"n": f"{typ} {tag}", "type": typ, "r": pick,
+                     "b": sorted(blues), "strategy": strategy})
     return sets
 
 
@@ -358,6 +425,13 @@ def main():
         print("[bootstrap] 历史库不足，开始全量自举…")
         st["history"] = bootstrap_history()
         print(f"[bootstrap] 完成，共 {len(st['history'])} 期")
+    if st.get("ver", 1) < 2:
+        last_drawn = st["history"][-1]["p"] if st.get("history") else ""
+        stale = [k for k in list(st.get("tickets", {})) if k > last_drawn]
+        for k in stale:
+            st["tickets"].pop(k, None)
+        st["ver"] = 2
+        print(f"[迁移] 升级为复式玩法(7+1/6+2)，已清理未开奖的旧单式票 {stale}")
     print(f"[state] 历史 {len(st['history'])} 期 / 已下注 {len(st['tickets'])} 期 / 台账 {len(st['ledger'])} 条")
 
     try:
@@ -388,18 +462,18 @@ def main():
             print(f"[复盘] {latest['p']} 已复盘，跳过")
             detail = [x for x in st["ledger"] if x["p"] == latest["p"]][0]
         else:
-            res = review(st["tickets"][latest["p"]], latest)
-            cost = len(res) * 2
-            prize = sum(r["prize"] for r in res)
-            best = min((r["tier"] for r in res if r["tier"]), default=0)
+            rv = review(st["tickets"][latest["p"]], latest)
             detail = {
                 "p": latest["p"], "d": latest["d"], "r": latest["r"], "b": latest["b"],
-                "cost": cost, "prize": prize, "pl": prize - cost, "best": TIER[best],
-                "res": res, "ts": time.strftime("%Y-%m-%d %H:%M"),
+                "cost": rv["cost"], "prize": rv["prize"], "pl": rv["pl"], "best": rv["best"],
+                "notes": rv["notes"], "win_notes": rv["win_notes"],
+                "tickets": [{k: v for k, v in t.items() if k != "hits"} for t in rv["tickets"]],
+                "hits": [h for t in rv["tickets"] for h in t["hits"] if h["tier"]],
+                "ts": time.strftime("%Y-%m-%d %H:%M"),
             }
             st["ledger"].append(detail)
             reviewed_now = True
-            print(f"[复盘] {latest['p']} {TIER[best]} 盈亏 {prize-cost:+}")
+            print(f"[复盘] {latest['p']} {rv['best']} 中{rv['win_notes']}注 盈亏 {rv['pl']:+}")
     else:
         print(f"[复盘] {latest['p']} 无投注记录")
 
@@ -418,11 +492,12 @@ def main():
     prize_all = sum(x["prize"] for x in st["ledger"])
     strat = {}
     for e in st["ledger"]:
-        for r in e["res"]:
-            a = strat.setdefault(r["name"], {"n": 0, "hit": 0, "prize": 0})
+        for t in e.get("tickets", []):
+            a = strat.setdefault(t["n"], {"n": 0, "hit": 0, "prize": 0, "notes": 0})
             a["n"] += 1
-            a["hit"] += r["rh"]
-            a["prize"] += r["prize"]
+            a["notes"] += t["notes"]
+            a["hit"] += t["max_rh"]
+            a["prize"] += t["prize"]
 
     # 输出
     payload = {
@@ -436,7 +511,7 @@ def main():
             "periods": len(st["ledger"]), "cost": cost_all, "prize": prize_all,
             "pl": prize_all - cost_all,
             "rate": round(prize_all / cost_all * 100, 1) if cost_all else 0,
-            "strategy": [{"name": k, "n": v["n"],
+            "strategy": [{"name": k, "n": v["n"], "notes": v["notes"],
                           "avg_hit": round(v["hit"] / v["n"], 2),
                           "prize": v["prize"]} for k, v in
                          sorted(strat.items(), key=lambda kv: -kv[1]["hit"] / kv[1]["n"])],
@@ -452,51 +527,46 @@ def main():
     nxt_week = _wd[date.fromisoformat(nd).weekday()]
 
     # 微信推送（Markdown，Server酱/企微机器人都能渲染）
-    def ball_row(reds, blue, unit="　"):
-        return "**" + " ".join(f"{x:02d}" for x in reds) + "**" + unit + "＋　**" + f"{blue:02d}" + "**"
+    def fmt_ticket(t, hit=None):
+        reds = " ".join(f"{x:02d}" for x in t["r"])
+        blues = " ".join(f"{b:02d}" for b in t["b"])
+        return f"**{reds}**　＋　**{blues}**"
 
     def build_message():
-        md = []
-        md.append(f"### 第 {nxt} 期　{nxt_week}")
+        total_notes = sum(notes_of(t) for t in sets)
+        md = [f"### 第 {nxt} 期　{nxt_week}", ""]
+        md.append(f"{len(sets)} 张票 · {total_notes} 注 · {total_notes * 2} 元 · 开奖 21:15")
         md.append("")
-        md.append(f"共 {len(sets)} 组 · 投入 {len(sets) * 2} 元 · 开奖 21:15")
-        md.append("")
-        for s in sets:
-            md.append(f"- **{s['n']}**　{ball_row(s['r'], s['b'])}")
+        for t in sets:
+            md.append(f"- **{t['n']}**（{notes_of(t)} 注）")
+            md.append(f"　{fmt_ticket(t)}")
         if detail:
+            md += ["", "---", "", f"### 第 {detail['p']} 期复盘", ""]
+            md.append("开奖　**" + " ".join(f"{x:02d}" for x in detail["r"]) + "**　＋　**"
+                      + f"{detail['b']:02d}" + "**")
             md.append("")
-            md.append("---")
-            md.append("")
-            md.append(f"### 第 {detail['p']} 期复盘")
-            md.append("")
-            md.append(f"开奖　{ball_row(detail['r'], detail['b'])}")
-            md.append("")
-            md.append(f"一等奖 {latest['p1']} 注 · 单注 {latest['p1amt'] / 10000:.1f} 万"
-                      if latest.get("p1amt") else "")
-            md.append("")
-            for r in detail["res"]:
-                tag = "命中" if r["rh"] else "未中"
-                star = "中奖 " + TIER[r["tier"]] if r["tier"] else "未中奖"
-                md.append(f"- {r['name']}　红球 {r['rh']} 个　蓝球 {'中' if r['bh'] else '—'}　{star}")
+            if latest.get("p1amt"):
+                md.append(f"一等奖 {latest['p1']} 注 · 单注 {latest['p1amt'] / 10000:.1f} 万")
+                md.append("")
+            for t in detail.get("tickets", []):
+                mark = f"　中奖 {t['win_notes']} 注（{t['best']}）" if t["win_notes"] else "　未中奖"
+                md.append(f"- **{t['n']}**　{t['notes']} 注　单注最多中 {t['max_rh']} 个红球{mark}")
             md.append("")
             sign = "+" if detail["pl"] >= 0 else ""
             md.append(f"投入 **{detail['cost']}** 元　回收 **{detail['prize']}** 元　"
                       f"盈亏 **{sign}{detail['pl']}** 元")
             if cost_all:
-                rate = prize_all / cost_all * 100
                 md.append("")
                 md.append(f"累计 {len(st['ledger'])} 期　投入 {cost_all} 元　回收 {prize_all} 元　"
-                          f"盈亏 **{prize_all - cost_all:+}** 元　返奖率 {rate:.1f}%")
-        md.append("")
-        md.append("---")
-        md.append("")
-        md.append("*单期未中是数学常态；复盘只改进过程，不提高中奖概率。*")
-        return "\n".join(x for x in md if x is not None)
+                          f"盈亏 **{prize_all - cost_all:+}** 元　返奖率 {prize_all / cost_all * 100:.1f}%")
+        md += ["", "---", "", "*复式只是把多注装进一张票，每元钱的期望不变；"
+                   "复盘不改变中奖概率。*"]
+        return "\n".join(md)
 
     if detail:
         title = f"{nxt} 期号码已出 · {detail['p']} {detail['best']}"
     else:
-        title = f"{nxt} 期号码已出 · {len(sets)} 组"
+        title = f"{nxt} 期号码已出 · {len(sets)} 张票"
 
     force = "--force-push" in sys.argv
     try:

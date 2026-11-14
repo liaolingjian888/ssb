@@ -107,7 +107,7 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
 </header>
 
 <div class="wrap">
-  <h1>每期 5 组号码，开奖后自动复盘</h1>
+  <h1>每期 4 张票，开奖后自动复盘</h1>
   <p class="lead">数据源：中国福利彩票官网 · 历史样本 <span id="hn">—</span> 期 · 每期开奖后自动抓取、判定、生成下一期</p>
 
   <div class="card">
@@ -132,7 +132,7 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
   </div>
 
   <div class="metrics" style="margin-bottom:18px">
-    <div class="m"><div class="k">已复盘期数</div><div class="v" id="m1">0</div><div class="s">每期 5 注 · 10 元</div></div>
+    <div class="m"><div class="k">已复盘期数</div><div class="v" id="m1">0</div><div class="s">2 张 7+1 + 2 张 6+2</div></div>
     <div class="m"><div class="k">累计投入</div><div class="v" id="m2">¥0</div><div class="s">按 2 元/注</div></div>
     <div class="m"><div class="k">累计回收</div><div class="v" id="m3">¥0</div><div class="s">含固定奖与浮动奖</div></div>
     <div class="m"><div class="k">累计盈亏</div><div class="v" id="m4">¥0</div><div class="s" id="m4s">返奖率 —</div></div>
@@ -175,13 +175,15 @@ footer{font-size:11px;color:var(--ink3);text-align:center;margin-top:32px;line-h
 
 <script>
 const pad = n => String(n).padStart(2, '0');
-const money = n => '¥' + (n || 0).toLocaleString('zh-CN');
+const money = n => (n < 0 ? '-¥' : '¥') + Math.abs(n || 0).toLocaleString('zh-CN');
 const WD = ['日','一','二','三','四','五','六'];
 
 function balls(reds, blue, small) {
   const cls = small ? 'ball sm' : 'ball';
+  const blues = Array.isArray(blue) ? blue : [blue];
   return reds.map(x => `<span class="${cls} r">${pad(x)}</span>`).join('') +
-         `<span class="plus">+</span><span class="${cls} b">${pad(blue)}</span>`;
+         `<span class="plus">+</span>` +
+         blues.map(b => `<span class="${cls} b">${pad(b)}</span>`).join('');
 }
 
 const REMOTE_DATA = 'https://raw.githubusercontent.com/liaolingjian888/ssb/main/data.json';
@@ -217,32 +219,43 @@ function render(d) {
   document.getElementById('nd').textContent = n.d + '（周' + WD[dt.getDay()] + '）';
   document.getElementById('nc').textContent = n.sets.length + ' 组 · ' + (n.sets.length*2) + ' 元';
   document.getElementById('next-tag').textContent = '预计 21:15 开奖';
+  const notesOf = s => {
+    const blues = Array.isArray(s.b) ? s.b.length : 1;
+    let c = 1, k = s.r.length;
+    for (let i = 0; i < 6; i++) c = c * (k - i) / (i + 1);
+    return Math.round(c) * blues;
+  };
+  let totalNotes = 0;
   document.getElementById('next-sets').innerHTML = n.sets.map(s => {
     const sum = s.r.reduce((a,b)=>a+b,0);
     const odd = s.r.filter(x=>x%2).length;
+    const nt = notesOf(s);
+    totalNotes += nt;
     return `<div class="set">
-      <span class="set-name">${s.n}</span>
+      <span class="set-name" style="width:88px">${s.n}</span>
       <span class="balls">${balls(s.r, s.b)}</span>
-      <span class="set-meta">和值 ${sum} · 奇偶 ${odd}:${6-odd}</span>
+      <span class="set-meta">${nt} 注 · ${nt*2} 元 · 和值 ${sum} · 奇偶 ${odd}:${s.r.length-odd}</span>
     </div>`;
   }).join('');
+  document.getElementById('nc').textContent =
+    `${n.sets.length} 张票 · ${totalNotes} 注 · ${totalNotes*2} 元`;
 
   // 复盘
   const lr = d.last_review;
   const rv = document.getElementById('review');
   if (!lr) {
     document.getElementById('rv-tag').textContent = '首期待开奖';
-    rv.innerHTML = `<div class="empty">还没有可复盘的期次。${n.p} 期开奖后，这里会显示 5 组的命中与盈亏。</div>`;
+    rv.innerHTML = `<div class="empty">还没有可复盘的期次。${n.p} 期开奖后，这里会显示 4 张票的命中与盈亏。</div>`;
   } else {
     document.getElementById('rv-tag').textContent = lr.p + ' · ' + lr.d;
     const pl = lr.pl;
-    const rows = lr.res.map(r => `<tr>
-      <td>${r.name}</td>
-      <td class="mono">${r.r.map(pad).join(' ')} <span class="plus">+</span> ${pad(r.b)}</td>
-      <td class="num">${r.rh}</td>
-      <td>${r.bh ? '<span class="pill win">中</span>' : '<span class="pill miss">未中</span>'}</td>
-      <td>${r.tier ? '<span class="pill win">'+['','一等奖','二等奖','三等奖','四等奖','五等奖','六等奖'][r.tier]+'</span>' : '—'}</td>
-      <td class="num">${r.prize ? money(r.prize) : '—'}</td>
+    const rows = (lr.tickets || []).map(t => `<tr>
+      <td>${t.n}</td>
+      <td class="mono">${t.r.map(pad).join(' ')} <span class="plus">+</span> ${(t.b||[]).map(pad).join(' ')}</td>
+      <td class="num">${t.notes}</td>
+      <td class="num">${t.max_rh}</td>
+      <td>${t.win_notes ? '<span class="pill win">中 '+t.win_notes+' 注</span>' : '<span class="pill miss">未中</span>'}</td>
+      <td class="num">${t.prize ? money(t.prize) : '—'}</td>
     </tr>`).join('');
     rv.innerHTML = `
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
@@ -253,7 +266,7 @@ function render(d) {
           盈亏 ${pl>0?'+':''}${pl} 元 · 最高 ${lr.best}</span>
       </div>
       <div class="scroll"><table>
-        <thead><tr><th>思路</th><th>号码</th><th class="num">红球命中</th><th>蓝球</th><th>奖级</th><th class="num">奖金</th></tr></thead>
+        <thead><tr><th>票</th><th>号码</th><th class="num">注数</th><th class="num">最多中红</th><th>中奖注数</th><th class="num">奖金</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
   }
@@ -271,11 +284,11 @@ function render(d) {
   // 台账
   const lg = d.ledger || [];
   document.getElementById('ledger').innerHTML = lg.length ? `<table>
-    <thead><tr><th>期号</th><th>开奖</th><th>号码</th><th class="num">投入</th><th class="num">回收</th><th class="num">盈亏</th><th>最高奖级</th></tr></thead>
+    <thead><tr><th>期号</th><th>开奖</th><th>开奖号码</th><th class="num">注数</th><th class="num">投入</th><th class="num">回收</th><th class="num">盈亏</th><th>最高奖级</th></tr></thead>
     <tbody>${lg.map(e=>`<tr>
       <td class="mono">${e.p}</td><td class="mono">${e.d}</td>
       <td class="mono">${e.r.map(pad).join(' ')} <span class="plus">+</span> ${pad(e.b)}</td>
-      <td class="num">${e.cost}</td><td class="num">${e.prize}</td>
+      <td class="num">${e.notes || '—'}</td><td class="num">${e.cost}</td><td class="num">${e.prize}</td>
       <td class="num" style="color:${e.pl>0?'var(--red)':e.pl<0?'var(--green)':'inherit'}">${e.pl>0?'+':''}${e.pl}</td>
       <td>${e.best==='未中奖'?'<span class="pill miss">未中奖</span>':'<span class="pill win">'+e.best+'</span>'}</td>
     </tr>`).join('')}</tbody></table>` : '<div class="empty">还没有复盘记录</div>';
