@@ -205,56 +205,20 @@ def amount_of(t, draw):
 
 
 FORM_LIBRARY = {
-    "A": {"desc": "2 张 7+1 + 2 张 6+2", "budget": 36, "forms": [
-        ("7+1", "主攻一", 7, 1, "综合评分"),
-        ("7+1", "主攻二", 7, 1, "热号延续"),
-        ("6+2", "辅攻一", 6, 2, "冷号回补"),
-        ("6+2", "辅攻二", 6, 2, "区间均衡")]},
-    "B": {"desc": "1 张 7+1 + 3 张 6+2（偏蓝球）", "budget": 26, "forms": [
-        ("7+1", "主攻", 7, 1, "综合评分"),
-        ("6+2", "辅攻一", 6, 2, "热号延续"),
-        ("6+2", "辅攻二", 6, 2, "冷号回补"),
-        ("6+2", "辅攻三", 6, 2, "区间均衡")]},
-    "C": {"desc": "4 张 6+2（全蓝球覆盖）", "budget": 16, "forms": [
-        ("6+2", "均衡一", 6, 2, "综合评分"),
-        ("6+2", "均衡二", 6, 2, "热号延续"),
-        ("6+2", "均衡三", 6, 2, "冷号回补"),
-        ("6+2", "均衡四", 6, 2, "区间均衡")]},
-    "D": {"desc": "2 张 7+1 + 1 张 6+2（偏红球容错）", "budget": 32, "forms": [
-        ("7+1", "主攻一", 7, 1, "综合评分"),
-        ("7+1", "主攻二", 7, 1, "热号延续"),
-        ("6+2", "辅攻", 6, 2, "冷号回补")]},
+    # 单张票：红球 6 个 + 蓝球 12 个 = 12 注 × 2 元 = 24 元
+    # 蓝球覆盖 12/16 = 75%，落在 20-26 元预算内
+    "A": {"desc": "单张 6+12（红球 6 个 + 蓝球 12 个）", "budget": 24,
+          "forms": [("6+12", "全蓝", 6, 12, "综合评分")]},
 }
 
 
 def choose_form(ledger, window=6):
-    """按最近几期"差在哪"挑票型。只调形式与预算，不改变任何一注的中奖概率。"""
-    recent = ledger[-window:]
-    if not recent:
-        return "A", "首期无历史，采用默认组合：红球容错 2 张 + 蓝球覆盖 2 张"
-    if len(recent) < 4:
-        return "A", (f"目前仅 {len(recent)} 期复盘，样本不足以下判断，"
-                     f"先沿用标准组合（A），累计 4 期后再按冷热切换")
-    notes = sum(e.get("notes", 0) for e in recent) or 1
-    blue = sum(e.get("blue_hits", 0) for e in recent)
-    maxrh = sum(e.get("max_rh", 0) for e in recent) / len(recent)
-    blue_rate = blue / notes
-    if blue_rate < 0.75 / 16:                     # 蓝球命中率明显偏低
-        return "B", (f"近 {len(recent)} 期蓝球 {blue}/{notes} 注命中（期望 {notes/16:.1f}），"
-                     f"本期加厚蓝球覆盖：6 个不同蓝球")
-    if maxrh >= 4.0:                              # 红球经常只差 1-2 个
-        return "D", (f"近 {len(recent)} 期最多中红平均 {maxrh:.1f} 个，红球接近度较好，"
-                     f"本期加厚红球容错：2 张 7+1")
-    return "A", (f"近 {len(recent)} 期蓝球 {blue}/{notes} 注、最多中红平均 {maxrh:.1f}，"
-                 f"红蓝均衡，采用标准组合")
+    """预算 24 元、单张票、结构固定。
+    票型切换只改成本与体验，不改中奖概率；预算锁定后没有切换余地。"""
+    return "A", "固定 24 元单票方案：红球 6 个 + 蓝球 12 个（蓝球覆盖 75%）"
 
 
-FORMS = [
-    ("7+1", "主攻一", 7, 1, "综合评分"),
-    ("7+1", "主攻二", 7, 1, "热号延续"),
-    ("6+2", "辅攻一", 6, 2, "冷号回补"),
-    ("6+2", "辅攻二", 6, 2, "区间均衡"),
-]
+FORMS = [("6+12", "全蓝", 6, 12, "综合评分")]
 
 
 def blues_of(t):
@@ -391,8 +355,8 @@ def make_sets(history, seed, forms=None):
 
     # 蓝球候选序列：热号、冷号交替，保证 4 张票的 6 个蓝球互不相同
     order = []
-    for i in range(8):
-        for b in (bh[i], bo[i]):
+    for i in range(16):
+        for b in (bh[i % 16], bo[i % 16]):
             if b not in order:
                 order.append(b)
 
@@ -414,9 +378,9 @@ def make_sets(history, seed, forms=None):
             break
         if not pick:
             continue
-        # 蓝球：在 4 张票之间做互不重复的覆盖（热号与冷号交替取）
-        slot = len(sets)
-        blues = [order[slot]] if n_blue == 1 else [order[slot], order[slot + 4]]
+        # 蓝球：按热度/遗漏交替顺序顺次取 n_blue 个
+        slot = sum(len(x["b"]) for x in sets)
+        blues = order[slot:slot + n_blue] or order[:n_blue]
         sets.append({"n": f"{typ} {tag}", "type": typ, "r": pick,
                      "b": sorted(blues), "strategy": strategy})
     return sets
