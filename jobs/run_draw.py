@@ -227,6 +227,9 @@ def choose_form(ledger, window=6):
     recent = ledger[-window:]
     if not recent:
         return "A", "首期无历史，采用默认组合：红球容错 2 张 + 蓝球覆盖 2 张"
+    if len(recent) < 4:
+        return "A", (f"目前仅 {len(recent)} 期复盘，样本不足以下判断，"
+                     f"先沿用标准组合（A），累计 4 期后再按冷热切换")
     notes = sum(e.get("notes", 0) for e in recent) or 1
     blue = sum(e.get("blue_hits", 0) for e in recent)
     maxrh = sum(e.get("max_rh", 0) for e in recent) / len(recent)
