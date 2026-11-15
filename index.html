@@ -124,7 +124,8 @@ footer a{color:var(--ink2)}
   <div class="hd">
     <div class="brand"><span class="dot"></span><span class="dot b"></span>双色球 · 自动选号与复盘</div>
     <div class="nav">
-      <a href="./" class="on">数据</a>
+      <a href="./" class="on">双色球</a>
+      <a href="./dlt.html">大乐透</a>
       <a href="./fate.html">运势选号</a>
       <span class="stamp" id="updated">读取中…</span>
     </div>
@@ -255,12 +256,9 @@ function balls(reds, blues, small, winSet) {
          `<span class="plus">+</span>` +
          bs.map(b => `<span class="${cls} b${hit(b)}">${pad(b)}</span>`).join('');
 }
-const notesOf = s => {
-  const blues = Array.isArray(s.b) ? s.b.length : 1;
-  let c = 1, k = s.r.length;
-  for (let i = 0; i < 6; i++) c = c * (k - i) / (i + 1);
-  return Math.round(c) * blues;
-};
+const FRONT = 6, BACK = 1;
+const combi = (n, k) => { let c = 1; for (let i = 0; i < k; i++) c = c * (n - i) / (i + 1); return Math.round(c); };
+const notesOf = s => combi(s.r.length, FRONT) * combi((Array.isArray(s.b) ? s.b.length : 1), BACK);
 
 function render(d, src) {
   const hist = d.history || [];
@@ -298,7 +296,7 @@ function render(d, src) {
   const rv = document.getElementById('review');
   if (!lr) {
     document.getElementById('rv-tag').textContent = '首期待开奖';
-    rv.innerHTML = `<div class="empty">还没有可复盘的期次。${n.p} 期开奖后，这里会显示 4 张票的命中与盈亏。</div>`;
+    rv.innerHTML = `<div class="empty">还没有可复盘的期次。${n.p} 期开奖后，这里会显示本期的命中与盈亏。</div>`;
   } else {
     document.getElementById('rv-tag').textContent = lr.p + ' · ' + lr.d;
     const win = new Set(lr.r);

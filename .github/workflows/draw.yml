@@ -1,11 +1,12 @@
-name: 双色球每期任务
+name: 彩票每期任务
 
 on:
   schedule:
-    # cron 里 0=周日 1=周一 … 6=周六。双色球周二/周四/周日开奖，所以是 0,2,4
-    # UTC 14:00 = 北京 22:00；再补一次 UTC 15:30 = 北京 23:30 防止首轮抓取过早
-    - cron: '0 14 * * 0,2,4'
-    - cron: '30 15 * * 0,2,4'
+    # cron: 0=周日 1=周一 2=周二 3=周三 4=周四 5=周五 6=周六
+    # 双色球（二/四/日）+ 大乐透（一/三/六）= 每天都要跑，两个脚本各自判断有无新开奖
+    # UTC 14:00 = 北京 22:00（首轮）；UTC 15:30 = 北京 23:30（补跑，防公告延迟）
+    - cron: '0 14 * * 0,1,2,3,4,6'
+    - cron: '30 15 * * 0,1,2,3,4,6'
   workflow_dispatch:
   push:
     branches: [main]
@@ -14,7 +15,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: ssb-task
+  group: lottery-task
   cancel-in-progress: false
 
 jobs:
@@ -29,7 +30,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 抓取开奖 / 复盘 / 生成下期号码
+      - name: 双色球
         continue-on-error: true
         env:
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
@@ -38,15 +39,24 @@ jobs:
           set -o pipefail
           python -u jobs/run_draw.py 2>&1 | tee data/last_run.log
 
+      - name: 大乐透
+        continue-on-error: true
+        env:
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+        run: |
+          set -o pipefail
+          python -u jobs/run_dlt.py 2>&1 | tee data/last_run_dlt.log
+
       - name: 提交结果
         if: always()
         run: |
-          git config user.name "ssb-bot"
-          git config user.email "ssb-bot@users.noreply.github.com"
+          git config user.name "lottery-bot"
+          git config user.email "lottery-bot@users.noreply.github.com"
           git add -A
           if git diff --staged --quiet; then
             echo "无变化，跳过提交"
           else
-            git commit -m "chore: 更新 $(date -u +%Y-%m-%d\ %H:%M) UTC"
+            git commit -m "chore: 更新 $(TZ=Asia/Shanghai date +%Y-%m-%d\ %H:%M)"
             git push
           fi

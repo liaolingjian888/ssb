@@ -9,7 +9,8 @@
 index.html              网页（纯静态，读同目录 data.json）
 data.json               每期生成的数据，网页直接消费（自动生成，勿手改）
 data/state.json         全部状态：3527 期历史 + 各期号码 + 复盘台账
-jobs/run_draw.py        每期任务脚本（纯标准库，无第三方依赖）
+jobs/run_draw.py        双色球每期任务（纯标准库）
+jobs/run_dlt.py         大乐透每期任务（纯标准库）
 .github/workflows/draw.yml   定时任务（周二/四/日 22:00 北京时间）
 ```
 
