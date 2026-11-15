@@ -1,4 +1,3 @@
-[清洗] 剔除 6 条非法历史记录
 [state] 历史 2948 期 / 已下注 1 期 / 台账 0 条
 [warn] 体彩官网失败：请求失败 https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?gameNo=85&provinceId=0&pageSize=10&isVerify=1&pageNo=1: HTTP Error 567: Unknown Status
 [warn] 已回退 500.com
