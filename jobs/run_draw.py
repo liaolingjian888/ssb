@@ -38,6 +38,11 @@ DRAW_WEEKDAYS = {1, 3, 6}
 
 
 # ---------------- 数据 ----------------
+def now_cn():
+    """北京时间字符串（GitHub runner 默认 UTC）"""
+    return time.strftime("%Y-%m-%d %H:%M", time.gmtime(time.time() + 8 * 3600))
+
+
 def load_state():
     STATE.parent.mkdir(parents=True, exist_ok=True)
     if STATE.exists():
@@ -518,7 +523,7 @@ def main():
                 "notes": rv["notes"], "win_notes": rv["win_notes"],
                 "tickets": [{k: v for k, v in t.items() if k != "hits"} for t in rv["tickets"]],
                 "hits": [h for t in rv["tickets"] for h in t["hits"] if h["tier"]],
-                "ts": time.strftime("%Y-%m-%d %H:%M"),
+                "ts": now_cn(),
             }
             st["ledger"].append(detail)
             reviewed_now = True
@@ -562,7 +567,7 @@ def main():
 
     # 输出
     payload = {
-        "updated": time.strftime("%Y-%m-%d %H:%M"),
+        "updated": now_cn(),
         "next": {"p": nxt, "d": nd, "sets": sets,
                  "form": form_key, "form_desc": form["desc"], "form_why": form_why},
         "latest": ({"p": latest["p"], "d": latest["d"], "r": latest["r"], "b": latest["b"],

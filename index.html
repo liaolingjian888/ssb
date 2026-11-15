@@ -218,16 +218,34 @@ const REMOTE_DATA = 'https://raw.githubusercontent.com/liaolingjian888/ssb/main/
 function getJSON(url) {
   return fetch(url, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 }
-function load() {
-  if (window.__DATA__) { render(window.__DATA__); return; }
-  getJSON(REMOTE_DATA + '?t=' + Date.now())
-    .catch(() => getJSON('./data.json?t=' + Date.now()))
-    .then(render)
-    .catch(e => {
-      document.getElementById('next-tag').textContent = '数据加载失败';
-      document.getElementById('review').innerHTML = '<div class="empty">数据源暂时不可达，稍后刷新重试。</div>';
-      console.error(e);
-    });
+async function load() {
+  if (window.__DATA__) { render(window.__DATA__, '本地'); return; }
+  const sources = [
+    ['GitHub 源文件', REMOTE_DATA + '?t=' + Date.now()],
+    ['jsDelivr 镜像', 'https://cdn.jsdelivr.net/gh/liaolingjian888/ssb@main/data.json'],
+    ['本站快照', './data.json?t=' + Date.now()]
+  ];
+  for (const [name, url] of sources) {
+    try {
+      const d = await getJSON(url);
+      render(d, name);
+      return;
+    } catch (e) { console.warn('数据源失败：' + name, e); }
+  }
+  document.getElementById('next-tag').textContent = '数据加载失败';
+  document.getElementById('review').innerHTML =
+    '<div class="empty">三个数据源都不可达。稍后刷新重试。</div>';
+}
+function markFresh(src, updated) {
+  const el = document.getElementById('updated');
+  el.textContent = src + ' · ' + updated;
+  const t = new Date(updated.replace(' ', 'T') + ':00+08:00').getTime();
+  const ageH = (Date.now() - t) / 3600000;
+  if (ageH > 12) {
+    el.innerHTML = `<span style="color:#8A5A00;background:#FDF3E4;padding:2px 8px;border-radius:9px">数据已 ${Math.round(ageH)} 小时未更新 · ${src}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--green)">数据正常</span> · ${src} · ${updated}`;
+  }
 }
 function balls(reds, blues, small, winSet) {
   const cls = small ? 'ball sm' : 'ball';
@@ -244,10 +262,10 @@ const notesOf = s => {
   return Math.round(c) * blues;
 };
 
-function render(d) {
+function render(d, src) {
   const hist = d.history || [];
   document.getElementById('hn').textContent = hist.length.toLocaleString('zh-CN');
-  document.getElementById('updated').textContent = '更新于 ' + d.updated;
+  markFresh(src || '数据', d.updated);
   document.getElementById('ft').textContent = '数据截至 ' + (hist.length ? hist[hist.length-1].p + ' 期' : '—');
   document.getElementById('ov1').innerHTML = hist.length.toLocaleString('zh-CN') + '<small>期</small>';
 
