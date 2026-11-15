@@ -280,31 +280,24 @@ def struct_ok(nums, n_front):
 
 
 FORM_LIBRARY = {
-    "A": {"desc": "1 张 6+3（前区复式 1 个 + 后区 3 个）", "budget": 36,
-          "forms": [("6+3", "全复式", 6, 3, "综合评分")]},
-    "B": {"desc": "2 张 6+2（放量前区，后区各 2 个）", "budget": 24,
-          "forms": [("6+2", "主攻一", 6, 2, "热号延续"),
-                    ("6+2", "主攻二", 6, 2, "冷号回补")]},
-    "C": {"desc": "2 张 5+3（前区单式，后区覆盖 6 个）", "budget": 12,
-          "forms": [("5+3", "轻量一", 5, 3, "综合评分"),
-                    ("5+3", "轻量二", 5, 3, "区间均衡")]},
+    # 20 元 / 10 注：2 张 5+3 + 4 张 5+2
+    # 后区用 5 个号，恰好铺满 C(5,2)=10 个后区对，零重复
+    "P20": {"desc": "2 张 5+3 + 4 张 5+2（后区 5 码铺满 10 对）", "budget": 20,
+            "forms": [
+                ("5+3", "后区一", 5, 3, "综合评分", (0, 1, 2)),
+                ("5+3", "后区二", 5, 3, "热号延续", (2, 3, 4)),
+                ("5+2", "补位一", 5, 2, "冷号回补", (0, 3)),
+                ("5+2", "补位二", 5, 2, "区间均衡", (0, 4)),
+                ("5+2", "补位三", 5, 2, "热号延续", (1, 3)),
+                ("5+2", "补位四", 5, 2, "综合评分", (1, 4)),
+            ]},
 }
 
 
 def choose_form(ledger, window=6):
-    recent = ledger[-window:]
-    if not recent:
-        return "A", "首期无历史，采用默认组合：前区复式 1 个 + 后区 3 个"
-    if len(recent) < 4:
-        return "A", (f"目前仅 {len(recent)} 期复盘，样本不足以下判断，先沿用标准组合（A）")
-    notes = sum(e.get("notes", 0) for e in recent) or 1
-    mb = sum(e.get("max_b", 0) for e in recent) / len(recent)
-    mf = sum(e.get("max_f", 0) for e in recent) / len(recent)
-    if mb < 1.0:
-        return "C", f"近 {len(recent)} 期后区命中偏低（平均 {mb:.1f} 个），本期加厚后区：覆盖 6 个后区号"
-    if mf >= 4.0:
-        return "A", f"近 {len(recent)} 期前区平均最多中 {mf:.1f} 个，前区接近度好，本期上复式"
-    return "B", f"近 {len(recent)} 期前区 {mf:.1f}、后区 {mb:.1f}，前区略强，采用双票 6+2"
+    """预算固定 20 元 / 10 注，结构固定。票型不再随复盘切换——
+    切换票型只会改变成本与体验，不改变中奖概率，没有优化的余地。"""
+    return "P20", "固定 20 元方案：2 张 5+3 + 4 张 5+2，后区 5 个号铺满 10 个后区对，前区 6 组不同组合"
 
 
 def make_sets(history, seed, forms):
@@ -319,7 +312,9 @@ def make_sets(history, seed, forms):
                 border.append(b)
     pool_map = dict(pools["pools"])
     sets, slot = [], 0
-    for typ, tag, nf, nb, strategy in forms:
+    for item in forms:
+        typ, tag, nf, nb, strategy = item[:5]
+        blue_idx = item[5] if len(item) > 5 else None
         pool = sorted(set(pool_map.get(strategy, [])))
         if len(pool) < nf:
             continue
@@ -334,8 +329,13 @@ def make_sets(history, seed, forms):
             break
         if not pick:
             continue
-        blues = sorted(border[slot:slot + nb])
-        slot += nb
+        if blue_idx is not None:
+            blues = sorted(border[i % len(border)] for i in blue_idx)
+        else:
+            blues = sorted(border[slot:slot + nb])
+            slot += nb
+        if len(set(blues)) < nb:
+            continue
         sets.append({"n": f"{typ} {tag}", "type": typ, "r": pick,
                      "b": blues, "strategy": strategy})
     return sets
