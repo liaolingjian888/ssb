@@ -50,7 +50,13 @@ def num(v):
 def load_state():
     STATE.parent.mkdir(parents=True, exist_ok=True)
     if STATE.exists():
-        return json.loads(STATE.read_text(encoding="utf-8"))
+        st = json.loads(STATE.read_text(encoding="utf-8"))
+        before = len(st.get("history") or [])
+        st["history"] = [h for h in (st.get("history") or []) if valid_row(h)]
+        st["history"].sort(key=lambda x: x["p"])
+        if len(st["history"]) != before:
+            print(f"[清洗] 剔除 {before - len(st['history'])} 条非法历史记录")
+        return st
     return {"history": [], "tickets": {}, "ledger": [], "ver": 2}
 
 
@@ -67,6 +73,18 @@ def http_get(url, referer=None, tries=4):
             last = e
             time.sleep(2 + i * 2)
     raise RuntimeError(f"请求失败 {url}: {last}")
+
+
+def valid_row(r):
+    """严格校验：期号 5 位数字、前区 5 个 1-35 互不相同、后区 2 个 1-12 互不相同"""
+    if not (isinstance(r.get("p"), str) and len(r["p"]) == 5 and r["p"].isdigit()):
+        return False
+    f, b = r.get("f") or [], r.get("b") or []
+    if len(f) != 5 or len(set(f)) != 5 or not all(1 <= x <= 35 for x in f):
+        return False
+    if len(b) != 2 or len(set(b)) != 2 or not all(1 <= x <= 12 for x in b):
+        return False
+    return True
 
 
 def parse_row(r):
@@ -91,11 +109,14 @@ def fetch_page(page_no, size=100):
 
 def fetch_recent(count=6):
     rows, _ = fetch_page(1, max(count, 10))
+    rows = [x for x in rows if valid_row(x)]
     rows.sort(key=lambda x: x["p"])
     return rows[-count:]
 
 
 def fetch_recent_500(count=6):
+    """500.com 兜底。列序：[0]序号 [1]期号 [2-6]前区 [7-8]后区 [9]奖池
+       [10]一等注数 [11]一等金额 [12]二等注数 [13]二等金额 [14]总投注 [15]日期"""
     y = date.today().year
     url = ("https://datachart.500.com/dlt/history/newinc/history.php"
            f"?start={str(y)[2:]}001&end={str(y)[2:]}999")
@@ -104,20 +125,19 @@ def fetch_recent_500(count=6):
     for tr in re.findall(r'<tr class="t_tr1">(.*?)</tr>', html, re.S):
         c = [re.sub(r"<[^>]+>", "", x).replace("\xa0", "").strip()
              for x in re.findall(r"<td[^>]*>(.*?)</td>", tr, re.S)]
-        if len(c) < 15:
-            continue
-        # 500.com 大乐透列: 期号 前区5 后区2 奖池 一等注数 一等金额 二等注数 二等金额 ... 日期
+        if len(c) < 16 or not re.fullmatch(r"\d{5}", c[1]):
+            continue                       # 跳过表头行与非数据行
         try:
-            f = sorted(int(v) for v in c[1:6])
-            b = sorted(int(v) for v in c[6:8])
+            f = sorted(int(v) for v in c[2:7])
+            b = sorted(int(v) for v in c[7:9])
         except Exception:
             continue
-        out.append({"p": c[0], "d": c[-1], "f": f, "b": b,
-                    "p1": num(c[9]) if len(c) > 9 else 0,
-                    "p1amt": num(c[10]) if len(c) > 10 else 0,
-                    "p2": num(c[11]) if len(c) > 11 else 0,
-                    "p2amt": num(c[12]) if len(c) > 12 else 0,
-                    "sales": 0, "pool": num(c[8]) if len(c) > 8 else 0})
+        row = {"p": c[1], "d": c[15], "f": f, "b": b,
+               "p1": num(c[10]), "p1amt": num(c[11]),
+               "p2": num(c[12]), "p2amt": num(c[13]),
+               "sales": num(c[14]), "pool": num(c[9])}
+        if valid_row(row):
+            out.append(row)
     out.sort(key=lambda x: x["p"])
     return out[-count:]
 
