@@ -404,8 +404,25 @@ def main():
         st["history"] = bootstrap_history()
     print(f"[state] 历史 {len(st['history'])} 期 / 已下注 {len(st['tickets'])} 期 / 台账 {len(st['ledger'])} 条")
 
+    today = date.today().isoformat()
+    is_draw_day = date.today().weekday() in DRAW_WEEKDAYS
+    recent = None
+    for attempt in range(5):
+        try:
+            recent = fetch_recent(6)
+        except Exception as e:
+            recent = None
+            if attempt == 0:
+                print(f"[warn] 体彩官网失败：{e}", file=sys.stderr)
+        # 开奖日晚间：若还没拿到今天的结果，等 80 秒再抓
+        if recent and (not is_draw_day or recent[-1]["d"] >= today):
+            break
+        if attempt < 4:
+            print(f"[等待] 第 {attempt+1} 次抓取未取得今日开奖，80 秒后重试…")
+            time.sleep(80)
     try:
-        recent = fetch_recent(6)
+        if not recent:
+            raise RuntimeError("多次抓取均为空")
     except Exception as e:
         print(f"[warn] 体彩官网失败：{e}", file=sys.stderr)
         try:
