@@ -405,7 +405,7 @@ def main():
     print(f"[state] 历史 {len(st['history'])} 期 / 已下注 {len(st['tickets'])} 期 / 台账 {len(st['ledger'])} 条")
 
     today = date.today().isoformat()
-    is_draw_day = date.today().weekday() in DRAW_WEEKDAYS
+    is_draw_day = date.today().weekday() in DRAW_WEEKDAYS and "--force-push" not in sys.argv
     recent = None
     for attempt in range(5):
         try:
