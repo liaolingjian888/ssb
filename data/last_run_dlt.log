@@ -1,4 +1,4 @@
-[state] 历史 2951 期 / 已下注 4 期 / 台账 3 条
+[state] 历史 2952 期 / 已下注 5 期 / 台账 4 条
 [warn] 体彩官网失败：请求失败 https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry?gameNo=85&provinceId=0&pageSize=10&isVerify=1&pageNo=1: HTTP Error 567: Unknown Status
 [等待] 第 1 次抓取未取得今日开奖，80 秒后重试…
 [等待] 第 2 次抓取未取得今日开奖，80 秒后重试…
@@ -6,8 +6,8 @@
 [等待] 第 4 次抓取未取得今日开奖，80 秒后重试…
 [warn] 体彩官网失败：多次抓取均为空
 [warn] 已回退 500.com
-[抓取] 新增 1 期，最新 26134
-[复盘] 26134 未中奖 中 0 注 盈亏 -20
-[选号] 生成 26135（2026-11-25）1 张 · 票型 P20
+[抓取] 新增 0 期，最新 26134
+[复盘] 26134 已复盘
+[选号] 26135 沿用（票型 P20）
 [输出] /home/runner/work/ssb/ssb/data_dlt.json
-[推送] ['serverchan:{"code":0,"message":"","data":{"pushid":"70448631"']
+[推送] 无新开奖也无新复盘，跳过
