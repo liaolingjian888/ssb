@@ -89,6 +89,7 @@ def fetch_recent_500(year=None, count=6):
                     "r": sorted(int(x) for x in c[2:8]), "b": int(c[8]),
                     "p1": n(c[11]), "p1amt": n(c[12]),
                     "p2": n(c[13]), "p2amt": n(c[14]),
+                    "p2add": 0, "p2addamt": 0,
                     "sales": n(c[15]), "pool": n(c[10])})
     out.sort(key=lambda x: x["p"])
     return out[-count:]
@@ -115,6 +116,7 @@ def fetch_recent(count=6):
             "b": int(row["blue"]),
             "p1": num(pg.get(1, {}), "typenum"), "p1amt": num(pg.get(1, {}), "typemoney"),
             "p2": num(pg.get(2, {}), "typenum"), "p2amt": num(pg.get(2, {}), "typemoney"),
+            "p2add": num(row, "z2add"), "p2addamt": num(row, "m2add"),
             "sales": num(row, "sales"), "pool": num(row, "poolmoney"),
         })
     out.sort(key=lambda x: x["p"])
@@ -194,13 +196,15 @@ def tier_of(rh, bh):
     return 6 if bh else 0
 
 
-def amount_of(t, draw):
+def amount_of(t, draw, promo=False):
     if t in FIXED:
-        return FIXED[t]
+        # 2026 派奖：单票满 20 元，六等奖每注加派 5 元。
+        return FIXED[t] + (5 if promo and t == 6 else 0)
     if t == 1:
         return draw["p1amt"]
     if t == 2:
-        return draw["p2amt"]
+        # 官网 z2add/m2add 分别为二等奖特别奖注数、单注派奖金额。
+        return draw["p2amt"] + (draw.get("p2addamt", 0) if promo else 0)
     return 0
 
 
@@ -245,12 +249,13 @@ def review(tickets, draw):
     per, total_cost, total_prize = [], 0, 0
     for t in tickets:
         hits = []
+        promo = bool(t.get("promo_2026")) and notes_of(t) * 2 >= 20
         for rs, b in expand(t):
             rh = len(set(rs) & win)
             bh = int(b == draw["b"])
             tier = tier_of(rh, bh)
             hits.append({"r": rs, "b": b, "rh": rh, "bh": bh,
-                         "tier": tier, "prize": amount_of(tier, draw)})
+                         "tier": tier, "prize": amount_of(tier, draw, promo)})
         prize = sum(h["prize"] for h in hits)
         cost = len(hits) * 2
         best = min((h["tier"] for h in hits if h["tier"]), default=0)
@@ -258,6 +263,7 @@ def review(tickets, draw):
                     "r": sorted(t["r"]), "b": blues_of(t), "notes": len(hits),
                     "cost": cost, "prize": prize, "best": TIER[best],
                     "win_notes": sum(1 for h in hits if h["tier"]),
+                    "promo": promo,
                     "max_rh": max(h["rh"] for h in hits),
                     "blue_hits": sum(h["bh"] for h in hits),
                     "hits": hits})
@@ -600,6 +606,8 @@ def main():
                 md.append("")
             for t in detail.get("tickets", []):
                 mark = f"　中奖 {t['win_notes']} 注（{t['best']}）" if t["win_notes"] else "　未中奖"
+                if t.get("promo"):
+                    mark += "　已计 2026 派奖"
                 md.append(f"- **{t['n']}**　{t['notes']} 注　单注最多中 {t['max_rh']} 个红球{mark}")
             md.append("")
             sign = "+" if detail["pl"] >= 0 else ""
@@ -619,8 +627,11 @@ def main():
         title = f"{nxt} 期号码已出 · {len(sets)} 张票"
 
     force = "--force-push" in sys.argv
+    no_push = "--no-push" in sys.argv
     try:
-        if not (added or reviewed_now or force):
+        if no_push:
+            print("[推送] --no-push 已指定，跳过")
+        elif not (added or reviewed_now or force):
             print("[推送] 本期无新开奖也无新复盘，跳过（避免重复打扰）")
         else:
             r = push(title, build_message())
