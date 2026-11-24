@@ -1,4 +1,4 @@
-[state] 历史 3531 期 / 已下注 5 期 / 台账 4 条
+[state] 历史 3532 期 / 已下注 6 期 / 台账 5 条
 [warn] 官网开奖接口失败：请求失败 https://www.cwl.gov.cn/cwl_admin/front/cwlkj/search/kjxx/findDrawNotice?name=ssq&issueCount=6&issueStart=&issueEnd=&dayStart=&dayEnd=&pageNo=1&pageSize=30&week=&systemType=PC: HTTP Error 403: Forbidden
 [等待] 第 1 次抓取未取得今日开奖，80 秒后重试…
 [等待] 第 2 次抓取未取得今日开奖，80 秒后重试…
@@ -6,8 +6,8 @@
 [等待] 第 4 次抓取未取得今日开奖，80 秒后重试…
 [warn] 官网开奖接口失败：多次抓取均为空
 [warn] 已回退到 500.com（2026 年）
-[抓取] 新增 1 期，最新 2026135
-[复盘] 2026135 未中奖 中0注 盈亏 -34
-[选号] 生成 2026136（2026-11-26）1 张 · 票型 A — 固定 14 元单票方案：红球 7 个 + 蓝球 1 个（红球容错 1 个，回本率 7.26%）
+[抓取] 新增 0 期，最新 2026135
+[复盘] 2026135 已复盘，跳过
+[选号] 2026136 沿用（票型 A）
 [输出] /home/runner/work/ssb/ssb/data.json
-[推送] 已发送
+[推送] 本期无新开奖也无新复盘，跳过（避免重复打扰）
